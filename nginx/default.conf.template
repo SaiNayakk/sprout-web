@@ -1,0 +1,65 @@
+# Serves the Sprout web app, and forwards /api to the gateway so the app and its API share one origin
+# (no CORS, nothing for another site to talk to). ${SPROUT_API} is the gateway, set in the image.
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Docker's DNS, so the gateway can come up after this does
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
+    server_tokens off;
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    # The app is one origin: its own scripts, fonts and API. Styles may be inline (components carry theirs).
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 'ok';
+    }
+
+    location /api/ {
+        set $gateway ${SPROUT_API};
+        proxy_pass $gateway;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        # Cloudflare names the real visitor; the gateway trusts it only because nothing but the tunnel reaches this server
+        proxy_set_header CF-Connecting-IP $http_cf_connecting_ip;
+        proxy_set_header CF-Visitor $http_cf_visitor;
+        proxy_set_header Authorization $http_authorization;
+        # live prices are one response that stays open for hours
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
+        client_max_body_size 64k;
+        add_header Cache-Control "no-store" always;
+        add_header X-Content-Type-Options "nosniff" always;
+    }
+
+    # built files have hashed names: cache for a year
+    location ~* \.(?:js|css|woff2|svg|png|ico)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files $uri =404;
+    }
+
+    # every other address is the app (it routes in the browser); index.html itself is never cached
+    location / {
+        add_header Cache-Control "no-cache";
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "no-referrer" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+        try_files $uri /index.html;
+    }
+}
