@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Unit tests
+        run: npm test -- --watch=false
+      - name: Production build
+        run: npm run build -- --configuration production
+      - name: The image builds (what hosts run)
+        run: docker build -t sprout-web .
+      - name: No inline scripts, so the strict Content-Security-Policy holds
+        run: |
+          if grep -q "onload=\|<script>" dist/sprout-web/browser/index.html; then
+            echo "index.html has an inline script"; exit 1
+          fi
