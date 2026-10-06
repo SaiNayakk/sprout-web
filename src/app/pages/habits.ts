@@ -149,10 +149,10 @@ interface Readiness {
           @if (wrapped.value(); as w) {
             <p class="big">{{ w.title }}</p>
             <p class="small">{{ w.year }}: invested in <strong>{{ w.monthsInvested }}</strong> {{ w.monthsInvested === 1 ? 'month' : 'months' }}, longest run <strong>{{ w.longestStreak }}</strong>,
-              <strong>{{ w.purchases }}</strong> purchases across <strong>{{ w.differentShares }}</strong> {{ w.differentShares === 1 ? 'share' : 'shares' }}
+              <strong>{{ w.purchases }}</strong> {{ w.purchases === 1 ? 'purchase' : 'purchases' }} across <strong>{{ w.differentShares }}</strong> {{ w.differentShares === 1 ? 'share' : 'shares' }}
               (<span class="num">{{ inr(w.invested) }}</span>).
               @if (w.topShare) { Most bought: <strong>{{ w.topShare.symbol }}</strong>. }
-              {{ w.planInstalments }} from plans, {{ w.potPurchases }} for goals, {{ w.challengesCompleted }} challenges done, {{ w.pointsEarned }} points earned.</p>
+              {{ w.planInstalments }} from plans, {{ w.potPurchases }} for goals, {{ w.challengesCompleted }} {{ w.challengesCompleted === 1 ? 'challenge' : 'challenges' }} done, {{ w.pointsEarned }} points earned.</p>
           }
         </section>
       </div>

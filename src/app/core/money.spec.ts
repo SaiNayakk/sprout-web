@@ -1,4 +1,4 @@
-import { amountToApi, direction, fromPaise, inr, paise, percent, signedInr } from './money';
+import { addInr, amountToApi, direction, fromPaise, inr, paise, percent, signedInr } from './money';
 
 describe('money', () => {
   it('groups digits the Indian way', () => {
@@ -49,5 +49,11 @@ describe('money', () => {
     expect(fromPaise(-3505)).toBe('-35.05');
     expect(fromPaise(7)).toBe('0.07');
     expect(signedInr(fromPaise(-3505))).toBe('−₹35.05 ▼');
+  });
+
+  it('adds two amounts exactly', () => {
+    expect(addInr('0.00', '143.00')).toBe('143.00');
+    expect(addInr('0.1', '0.2')).toBe('0.30');
+    expect(addInr(undefined, '5')).toBe('5.00');
   });
 });

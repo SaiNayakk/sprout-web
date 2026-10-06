@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Api } from '../core/api';
 import { Loader } from '../core/loader';
-import { amountToApi, inr } from '../core/money';
+import { addInr, amountToApi, inr } from '../core/money';
 import { messageOf } from '../core/problem';
 import { Toasts } from '../core/toast';
 import { Instrument, Pot, RoundUps } from '../core/types';
@@ -28,7 +28,7 @@ import { Status } from '../ui/status';
               <h2>{{ p.name }}</h2>
               <span class="chip" [class.reward]="p.status === 'REACHED'" [class.plain]="p.status === 'CLOSED'">{{ p.status === 'REACHED' ? 'Reached! ★' : p.status === 'CLOSED' ? 'Closed' : 'Growing' }}</span>
             </div>
-            <p class="big">{{ inr(p.value) }} <span class="small muted">of {{ inr(p.target, true) }}</span></p>
+            <p class="big">{{ inr(held(p)) }} <span class="small muted">of {{ inr(p.target, true) }}</span></p>
             <div class="progress" role="progressbar" [attr.aria-valuenow]="p.progressPercent" aria-valuemin="0" aria-valuemax="100" [attr.aria-label]="p.name + ' progress'"><span [style.width.%]="p.progressPercent"></span></div>
             <p class="small muted">
               In <strong>{{ p.symbol }}</strong>: {{ p.quantity }} {{ p.quantity === 1 ? 'share' : 'shares' }}, plus {{ inr(p.uninvested) }} waiting to buy the next one.
@@ -121,6 +121,11 @@ export class Goals {
   protected readonly inr = inr;
   protected readonly text = value;
   protected readonly isChecked = checked;
+
+  /** What a pot has: its shares at today's price and what is waiting to buy the next one. */
+  protected held(p: Pot): string {
+    return addInr(p.value, p.uninvested);
+  }
 
   protected readonly pots = new Loader<Pot[]>(async () => (await this.api.get<{ pots: Pot[] }>('/goals/v1/pots')).pots);
   protected readonly round = new Loader<RoundUps>(async () => {

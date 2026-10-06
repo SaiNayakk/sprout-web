@@ -33,10 +33,10 @@ import { Logo } from '../ui/logo';
 
       @if (personas.value(); as p) {
         <section class="card choose" aria-labelledby="who">
-          <h2 id="who">Explore Sprout as someone with months of history</h2>
+          <h2 id="who">Explore Sprout as a fictional customer</h2>
           <p class="muted">
-            No sign-up. Meet one of fifteen fictional customers from across India, each investing in their own way. Who would you
-            like to explore as?
+            No sign-up. Meet one of fifteen fictional customers from across India, each investing in their own way, with a history
+            that keeps growing. Who would you like to explore as?
           </p>
           <div class="grid groups" role="group" aria-labelledby="who">
             @for (g of p.groups; track g.code) {
@@ -52,8 +52,8 @@ import { Logo } from '../ui/logo';
             <p class="muted small" role="status">Setting things up…</p>
           }
           <p class="hint">
-            Time runs fast in the demo market (about 30 trading days a day), so their months of history are real: every order went through
-            the same exchange and books as yours would.
+            Time runs fast in the demo market (about 30 trading days a day), so histories grow by months in a day or two, and they are real:
+            every order went through the same exchange and books as yours would.
           </p>
         </section>
 

@@ -23,7 +23,7 @@ import { Status } from '../ui/status';
         }
       </div>
       <p class="muted small">
-        {{ market()?.source }}. These shares are fictional.
+        {{ market()?.source }} These shares are fictional.
         @if (!prices.live()) { <span class="chip bad">Reconnecting to live prices…</span> }
       </p>
       <div class="field"><label for="q" class="sr-only">Search</label>

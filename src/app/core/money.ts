@@ -66,6 +66,11 @@ export function paise(amount: string | number | null | undefined): number {
   return n === null ? 0 : Math.round(n * 100);
 }
 
+/** The sum of two rupee amounts, as the string {@link inr} reads (whole paise, so it never drifts). */
+export function addInr(a: string | number | null | undefined, b: string | number | null | undefined): string {
+  return fromPaise(paise(a) + paise(b));
+}
+
 /** Rupees as the two-decimal string {@link inr} reads, from whole paise. */
 export function fromPaise(p: number): string {
   const sign = p < 0 ? '-' : '';

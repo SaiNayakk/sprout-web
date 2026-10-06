@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
 import { Auth } from '../core/auth';
 import { Loader } from '../core/loader';
-import { fromPaise, inr, paise } from '../core/money';
+import { addInr, fromPaise, inr, paise } from '../core/money';
 import { Prices } from '../core/prices';
 import { Challenge, Funds, Habits, Holding, Market, Plan, Pot, RoundUps } from '../core/types';
 import { Chg } from '../ui/chg';
@@ -105,7 +105,7 @@ import { Status } from '../ui/status';
           <app-status [loading]="pots.loading() && !pots.value()" [error]="pots.error()" (retry)="pots.reload()" />
           @for (p of openPots(); track p.id) {
             <div class="stack-s">
-              <div class="row between"><strong>{{ p.name }}</strong><span class="num small">{{ inr(p.value) }} of {{ inr(p.target, true) }}</span></div>
+              <div class="row between"><strong>{{ p.name }}</strong><span class="num small">{{ inr(held(p)) }} of {{ inr(p.target, true) }}</span></div>
               <div class="progress" role="progressbar" [attr.aria-valuenow]="p.progressPercent" aria-valuemin="0" aria-valuemax="100" [attr.aria-label]="p.name + ' progress'"><span [style.width.%]="p.progressPercent"></span></div>
             </div>
           } @empty {
@@ -189,6 +189,10 @@ export class Home {
       stream.current = symbols.length ? this.prices.open(symbols) : null;
     });
     inject(DestroyRef).onDestroy(() => stream.current?.close());
+  }
+
+  protected held(p: Pot): string {
+    return addInr(p.value, p.uninvested);
   }
 
   protected greeting(): string {
