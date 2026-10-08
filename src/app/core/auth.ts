@@ -1,7 +1,9 @@
-import { HttpClient, HttpContext, HttpContextToken } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpContextToken, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { CELL_HEADER, Cell, cellFor, loadCells } from './cells';
+import { codeOf } from './problem';
 import { store } from './storage';
 import { DemoSession, SignInResponse, TokenPair, User } from './types';
 
@@ -11,6 +13,8 @@ const NO_AUTH = new HttpContext().set(PUBLIC, true);
 
 const KEY = 'sprout.session';
 
+const cellHeaders = (cell: string | undefined): Record<string, string> => (cell ? { [CELL_HEADER]: cell } : {});
+
 interface Saved {
   accessToken: string;
   refreshToken: string;
@@ -19,6 +23,8 @@ interface Saved {
   demoEndsAt?: string;
   /** A demo session from before sandbox v3 (a fictional persona); read only so such a session still shows a name. */
   persona?: { name: string };
+  /** The cell this customer lives in; absent for a session from before cells or on a single deployment. */
+  cell?: string;
 }
 
 /**
@@ -36,6 +42,8 @@ export class Auth {
   private readonly router = inject(Router);
   private readonly saved = signal<Saved | null>(store.read<Saved>(KEY));
   private inTab: Promise<string | null> | null = null;
+  /** The cell that issued a two-factor challenge, which must also check the code. */
+  private challengeCell: string | undefined;
 
   readonly signedIn = computed(() => this.saved() !== null);
   readonly name = computed(() => this.saved()?.name ?? this.saved()?.persona?.name ?? '');
@@ -59,34 +67,76 @@ export class Auth {
     return this.saved()?.accessToken ?? null;
   }
 
+  /** The cell to send this customer's calls to, if one is known. */
+  cell(): string | null {
+    return this.saved()?.cell ?? null;
+  }
+
   // ── signing in ─────────────────────────────────────────────────────────────
 
-  /** Signs in. A person with two-factor on gets a challenge to answer with {@link verifyCode}. */
+  /**
+   * Signs in. A person with two-factor on gets a challenge to answer with {@link verifyCode}.
+   * With cells, the email's own cell is asked first; customers from before cells all live in cell A,
+   * which the email may not pick, so a refusal of the credentials is tried against each other cell.
+   */
   async signIn(email: string, password: string): Promise<{ challengeId?: string }> {
-    const r = await firstValueFrom(this.http.post<SignInResponse>('/api/identity/v1/sessions', { email, password }, { context: NO_AUTH }));
-    if (r.status === 'TOTP_REQUIRED') {
-      return { challengeId: r.challengeId };
+    const cells = await loadCells(this.http);
+    if (cells === null) {
+      return this.signInVia(email, password, undefined);
     }
-    await this.adopt(r.tokens!);
+    const order = this.cellOrder(email, cells);
+    for (let i = 0; ; i++) {
+      try {
+        return await this.signInVia(email, password, order[i]);
+      } catch (e) {
+        const refused = e instanceof HttpErrorResponse && e.status === 401 && codeOf(e) === 'INVALID_CREDENTIALS';
+        if (!refused || i === order.length - 1) {
+          throw e;
+        }
+      }
+    }
+  }
+
+  private cellOrder(email: string, cells: Cell[]): string[] {
+    const first = cellFor(email, cells);
+    return [first, ...cells.map((c) => c.id).filter((id) => id !== first)];
+  }
+
+  private async signInVia(email: string, password: string, tried: string | undefined): Promise<{ challengeId?: string }> {
+    const r = await firstValueFrom(
+      this.http.post<SignInResponse>('/api/identity/v1/sessions', { email, password }, { context: NO_AUTH, headers: cellHeaders(tried), observe: 'response' }),
+    );
+    const cell = r.headers.get(CELL_HEADER) ?? tried;
+    if (r.body!.status === 'TOTP_REQUIRED') {
+      this.challengeCell = cell;
+      return { challengeId: r.body!.challengeId };
+    }
+    await this.adopt(r.body!.tokens!, cell);
     return {};
   }
 
   async verifyCode(challengeId: string, code: string): Promise<void> {
+    const tried = this.challengeCell;
     const r = await firstValueFrom(
-      this.http.post<SignInResponse>('/api/identity/v1/sessions/totp', { challengeId, code }, { context: NO_AUTH }),
+      this.http.post<SignInResponse>('/api/identity/v1/sessions/totp', { challengeId, code }, { context: NO_AUTH, headers: cellHeaders(tried), observe: 'response' }),
     );
-    await this.adopt(r.tokens!);
+    await this.adopt(r.body!.tokens!, r.headers.get(CELL_HEADER) ?? tried);
   }
 
   async signUp(email: string, password: string, displayName: string): Promise<void> {
-    await firstValueFrom(this.http.post<User>('/api/identity/v1/users', { email, password, displayName }, { context: NO_AUTH }));
-    await this.signIn(email, password);
+    const cells = await loadCells(this.http);
+    const cell = cells === null ? undefined : cellFor(email, cells);
+    await firstValueFrom(
+      this.http.post<User>('/api/identity/v1/users', { email, password, displayName }, { context: NO_AUTH, headers: cellHeaders(cell) }),
+    );
+    await this.signInVia(email, password, cell);
   }
 
   /** Try Sprout with a demo account of one's own, called {@link name}. */
   async startDemo(name: string): Promise<DemoSession> {
-    const s = await firstValueFrom(this.http.post<DemoSession>('/api/sandbox/v3/demo-sessions', { name }, { context: NO_AUTH }));
-    this.keep({ accessToken: s.accessToken, refreshToken: s.refreshToken, name: s.name, demoEndsAt: s.endsAt });
+    const r = await firstValueFrom(this.http.post<DemoSession>('/api/sandbox/v3/demo-sessions', { name }, { context: NO_AUTH, observe: 'response' }));
+    const s = r.body!;
+    this.keep({ accessToken: s.accessToken, refreshToken: s.refreshToken, name: s.name, demoEndsAt: s.endsAt, cell: r.headers.get(CELL_HEADER) ?? undefined });
     return s;
   }
 
@@ -102,8 +152,8 @@ export class Auth {
 
   // ── tokens ─────────────────────────────────────────────────────────────────
 
-  private async adopt(tokens: TokenPair): Promise<void> {
-    this.keep({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken });
+  private async adopt(tokens: TokenPair, cell: string | undefined): Promise<void> {
+    this.keep({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, cell });
     const me = await firstValueFrom(this.http.get<User>('/api/identity/v1/users/me'));
     this.keep({ ...this.saved()!, name: me.displayName });
   }

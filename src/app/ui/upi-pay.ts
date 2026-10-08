@@ -14,14 +14,14 @@ import { value } from './dom';
   template: `
     <form (submit)="$event.preventDefault(); pay()" novalidate>
       <div class="field"><label for="who">Pay</label>
-        <select id="who" [value]="payee()" (change)="payee.set(text($event))">
+        <select id="who" [value]="payee()" (change)="payee.set(text($event)); renew()">
           <option value="">Choose a shop</option>
           @for (m of merchants.value() ?? []; track m.vpa) {
             <option [value]="m.vpa" [selected]="m.vpa === payee()">{{ m.name }} · {{ m.category }}</option>
           }
         </select></div>
       <div class="field"><label for="pamount">Amount (₹)</label>
-        <input id="pamount" inputmode="decimal" placeholder="46" [value]="amount()" (input)="amount.set(text($event))" /></div>
+        <input id="pamount" inputmode="decimal" placeholder="46" [value]="amount()" (input)="amount.set(text($event)); renew()" /></div>
       <div class="field"><label for="ppin">UPI PIN</label>
         <input id="ppin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" [value]="pin()" (input)="pin.set(digits($event))" /></div>
       @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
@@ -40,8 +40,14 @@ export class UpiPay {
   protected readonly pin = signal('');
   protected readonly busy = signal(false);
   protected readonly error = signal('');
+  private key = Api.key();
   protected readonly text = value;
   protected readonly digits = (e: Event) => value(e).replace(/\D/g, '').slice(0, 6);
+
+  /** A changed shop or amount is a different payment, so it gets its own key. */
+  protected renew(): void {
+    this.key = Api.key();
+  }
 
   protected async pay(): Promise<void> {
     const amount = amountToApi(this.amount());
@@ -52,11 +58,15 @@ export class UpiPay {
     this.busy.set(true);
     this.error.set('');
     try {
-      const t = await this.api.post<Transaction>('/bank/v1/payments', { payeeVpa: this.payee(), amount, upiPin: this.pin() });
+      const t = await this.api.post<Transaction>('/bank/v1/payments', { payeeVpa: this.payee(), amount, upiPin: this.pin() }, this.key);
+      this.key = Api.key();
       this.toasts.show(`Paid ${inr(amount)}.`);
       this.amount.set('');
       this.paid.emit(t);
     } catch (e) {
+      if (Api.refused(e)) {
+        this.key = Api.key();   // refused: the next try is a new payment. Outcome unknown: keep the key so a retry is the same one
+      }
       const p = problemOf(e);
       this.error.set(codeOf(e) === 'INVALID_PIN' && p?.attemptsLeft !== undefined ? `That PIN is wrong. ${p.attemptsLeft} tries left.` : messageOf(e));
     } finally {

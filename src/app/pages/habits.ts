@@ -184,6 +184,8 @@ export class HabitsPage {
   protected readonly monthly = signal('2000');
   protected readonly years = signal('10');
   protected readonly future = signal<Projection | null>(null);
+  private squadKey = Api.key();
+  private squadBody = '';
 
   constructor() {
     void this.api.get<Readiness>('/habits/v1/readiness').then((r) => this.readiness.set(r), () => undefined);
@@ -215,8 +217,21 @@ export class HabitsPage {
       this.toasts.fail('Add a squad name and your nickname (at least 2 letters each).');
       return;
     }
+    const body = { name: this.squadName().trim(), nickname: this.nick().trim() };
+    if (JSON.stringify(body) !== this.squadBody) {
+      this.squadBody = JSON.stringify(body);   // a changed form is a different squad
+      this.squadKey = Api.key();
+    }
     await this.guard(async () => {
-      await this.api.post('/habits/v1/squads', { name: this.squadName().trim(), nickname: this.nick().trim() });
+      try {
+        await this.api.post('/habits/v1/squads', body, this.squadKey);
+      } catch (e) {
+        if (Api.refused(e)) {
+          this.squadKey = Api.key();   // refused: the next try is a new squad. Outcome unknown: keep the key so a retry is the same one
+        }
+        throw e;
+      }
+      this.squadKey = Api.key();
       this.squadName.set('');
       this.toasts.show('Squad started. Share its invite code with friends.');
       await this.squads.reload();

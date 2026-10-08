@@ -151,6 +151,7 @@ export class Goals {
   protected readonly ruPot = signal('');
   protected readonly ruError = signal('');
   private newKey = Api.key();
+  private newBody = '';
   private readonly keys = new Map<string, string>();
 
   protected tradable(): Instrument[] {
@@ -179,6 +180,10 @@ export class Goals {
       if (this.date()) {
         body['targetDate'] = this.date();
       }
+      if (JSON.stringify(body) !== this.newBody) {
+        this.newBody = JSON.stringify(body);   // a changed form is a different goal
+        this.newKey = Api.key();
+      }
       await this.api.post('/goals/v1/pots', body, this.newKey);
       this.newKey = Api.key();
       this.name.set('');
@@ -187,6 +192,9 @@ export class Goals {
       this.toasts.show('Goal started.');
       await this.pots.reload();
     } catch (e) {
+      if (Api.refused(e)) {
+        this.newKey = Api.key();   // refused: the next try is a new goal. Outcome unknown: keep the key so a retry is the same one
+      }
       this.error.set(messageOf(e));
     } finally {
       this.busy.set('');
