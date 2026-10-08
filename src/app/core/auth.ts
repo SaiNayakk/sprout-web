@@ -3,7 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { store } from './storage';
-import { DemoSession, GroupCode, Persona, SignInResponse, TokenPair, User } from './types';
+import { DemoSession, SignInResponse, TokenPair, User } from './types';
 
 /** Set on requests that must not carry (or wait for) a login: sign-in, refresh and the public sandbox. */
 export const PUBLIC = new HttpContextToken<boolean>(() => false);
@@ -14,8 +14,11 @@ const KEY = 'sprout.session';
 interface Saved {
   accessToken: string;
   refreshToken: string;
-  persona?: Persona;
   name?: string;
+  /** Set for a demo account: when it stops being this visitor's. */
+  demoEndsAt?: string;
+  /** A demo session from before sandbox v3 (a fictional persona); read only so such a session still shows a name. */
+  persona?: { name: string };
 }
 
 /**
@@ -35,9 +38,10 @@ export class Auth {
   private inTab: Promise<string | null> | null = null;
 
   readonly signedIn = computed(() => this.saved() !== null);
-  readonly persona = computed(() => this.saved()?.persona ?? null);
-  readonly name = computed(() => this.saved()?.persona?.name ?? this.saved()?.name ?? '');
-  readonly isDemo = computed(() => this.saved()?.persona !== undefined);
+  readonly name = computed(() => this.saved()?.name ?? this.saved()?.persona?.name ?? '');
+  readonly isDemo = computed(() => this.saved()?.demoEndsAt !== undefined || this.saved()?.persona !== undefined);
+  /** When the demo account stops being this visitor's, if it is one. */
+  readonly demoEndsAt = computed(() => this.saved()?.demoEndsAt ?? null);
 
   constructor() {
     // another tab signed in, refreshed or out: follow it
@@ -79,11 +83,11 @@ export class Auth {
     await this.signIn(email, password);
   }
 
-  /** Explore as a fictional customer from the chosen group. */
-  async startDemo(group: GroupCode): Promise<Persona> {
-    const s = await firstValueFrom(this.http.post<DemoSession>('/api/sandbox/v1/demo-sessions', { group }, { context: NO_AUTH }));
-    this.keep({ accessToken: s.accessToken, refreshToken: s.refreshToken, persona: s.persona });
-    return s.persona;
+  /** Try Sprout with a demo account of one's own, called {@link name}. */
+  async startDemo(name: string): Promise<DemoSession> {
+    const s = await firstValueFrom(this.http.post<DemoSession>('/api/sandbox/v3/demo-sessions', { name }, { context: NO_AUTH }));
+    this.keep({ accessToken: s.accessToken, refreshToken: s.refreshToken, name: s.name, demoEndsAt: s.endsAt });
+    return s;
   }
 
   async signOut(): Promise<void> {

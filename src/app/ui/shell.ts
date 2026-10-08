@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Auth } from '../core/auth';
@@ -12,7 +13,7 @@ interface Link {
 /** The signed-in frame: header and navigation (a tab bar on phones), around whichever page is showing. */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Logo],
+  imports: [DatePipe, RouterOutlet, RouterLink, RouterLinkActive, Logo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="top">
@@ -24,7 +25,7 @@ interface Link {
       </nav>
       <div class="who">
         @if (auth.isDemo()) {
-          <span class="chip plain" title="You are exploring as a fictional customer">Demo</span>
+          <span class="chip plain" title="You are trying Sprout with a demo account">Demo</span>
         }
         <button class="btn quiet small" type="button" (click)="menu.set(!menu())" [attr.aria-expanded]="menu()" aria-controls="more">
           {{ auth.name() || 'Menu' }} ▾
@@ -34,12 +35,12 @@ interface Link {
 
     @if (menu()) {
       <div class="sheet card" id="more">
-        @if (auth.persona(); as p) {
+        @if (auth.isDemo()) {
           <p class="small muted">
-            You are exploring as <strong>{{ p.name }}</strong> ({{ p.pronouns }}), {{ p.city }}.
-            <br />{{ p.story }}
+            This is your own demo account
+            @if (auth.demoEndsAt(); as ends) { , yours until {{ ends | date: 'shortTime' }}, when it is closed and cleared away }.
+            Time runs fast in the demo market, so months of history build up in hours.
           </p>
-          <p class="small muted">Time runs fast in the demo market, so months of history build up in hours.</p>
         }
         <div class="more-links" (click)="menu.set(false)" (keydown.escape)="menu.set(false)" tabindex="-1">
           @for (l of all; track l.path) {

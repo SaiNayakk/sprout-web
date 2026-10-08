@@ -4,10 +4,11 @@ import { Api } from '../core/api';
 import { Auth } from '../core/auth';
 import { Loader } from '../core/loader';
 import { messageOf } from '../core/problem';
-import { GroupCode, Personas } from '../core/types';
+import { DemoStatus } from '../core/types';
+import { value } from '../ui/dom';
 import { Logo } from '../ui/logo';
 
-/** The front door: explore as a fictional customer (no sign-up), or sign in, or create an account. */
+/** The front door: try Sprout with a demo account of one's own (no sign-up), or sign in, or create an account. */
 @Component({
   selector: 'app-landing',
   imports: [RouterLink, Logo],
@@ -31,44 +32,31 @@ import { Logo } from '../ui/logo';
         </p>
       </section>
 
-      @if (personas.value(); as p) {
-        <section class="card choose" aria-labelledby="who">
-          <h2 id="who">Explore Sprout as a fictional customer</h2>
+      @if (demo.value(); as d) {
+        <section class="card choose" aria-labelledby="try">
+          <h2 id="try">Try Sprout with a demo account of your own</h2>
           <p class="muted">
-            No sign-up. Meet one of fifteen fictional customers from across India, each investing in their own way, with a history
-            that keeps growing. Who would you like to explore as?
+            No sign-up. You get an account nobody else is using, with months of real history already in it: a monthly plan,
+            UPI spends rounded up into a holiday pot, and a few shares. It's yours for {{ hours(d.endsAfterMinutes) }}, then it's closed
+            and cleared away.
           </p>
-          <div class="grid groups" role="group" aria-labelledby="who">
-            @for (g of p.groups; track g.code) {
-              <button class="btn secondary block" type="button" [disabled]="busy()" (click)="explore(g.code)">
-                {{ g.label }}
-              </button>
-            }
-          </div>
+          <form class="row try" (submit)="$event.preventDefault(); explore()" novalidate>
+            <div class="field grow">
+              <label for="demo-name">What should we call you?</label>
+              <input id="demo-name" autocomplete="given-name" maxlength="40" placeholder="Your first name" [value]="name()" (input)="name.set(text($event))" />
+            </div>
+            <button class="btn" type="submit" [disabled]="busy()">{{ busy() ? 'Setting things up…' : 'Try the demo' }}</button>
+          </form>
           @if (error()) {
             <p class="error" role="alert">{{ error() }}</p>
           }
-          @if (busy()) {
-            <p class="muted small" role="status">Setting things up…</p>
+          @if (!d.ready) {
+            <p class="muted small" role="status">A demo account is being set up right now; it may take a few minutes.</p>
           }
           <p class="hint">
             Time runs fast in the demo market (about 30 trading days a day), so histories grow by months in a day or two, and they are real:
             every order went through the same exchange and books as yours would.
           </p>
-        </section>
-
-        <section>
-          <h2>The people you might meet</h2>
-          <div class="grid three">
-            @for (person of p.personas; track person.id) {
-              <article class="card person">
-                <h3>{{ person.name }} <span class="muted small">({{ person.pronouns }})</span></h3>
-                <p class="small muted">{{ person.city }}</p>
-                <p class="small">{{ person.story }}</p>
-                <span class="chip plain">{{ styles[person.style] }}</span>
-              </article>
-            }
-          </div>
         </section>
       }
 
@@ -79,7 +67,7 @@ import { Logo } from '../ui/logo';
       </section>
 
       <p class="small muted foot">
-        Sprout is a learning project. Everything here is simulated: no real trades, no real money, and the people are made up.
+        Sprout is a learning project. Everything here is simulated: no real trades and no real money.
         <a href="https://github.com/SaiNayakk/sprout-platform">See how it's built</a>.
       </p>
     </main>
@@ -92,8 +80,8 @@ import { Logo } from '../ui/logo';
     .leaf { color: var(--leaf-text); }
     .lede { font-size: 1.1rem; color: var(--ink-soft); }
     .choose { margin: 1rem 0 2rem; }
-    .groups { grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); margin: 1rem 0 .5rem; }
-    .person h3 { margin-bottom: .1rem; }
+    .try { align-items: flex-end; flex-wrap: wrap; gap: .75rem; margin: 1rem 0 .5rem; }
+    .try .grow { flex: 1 1 14rem; margin: 0; }
     .how { margin: 2rem 0; }
     .foot { margin-top: 2rem; }
   `,
@@ -103,22 +91,25 @@ export class Landing {
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
 
-  protected readonly personas = new Loader<Personas>(() => this.api.get<Personas>('/sandbox/v1/personas'));
+  protected readonly demo = new Loader<DemoStatus>(() => this.api.get<DemoStatus>('/sandbox/v3/demo'));
+  protected readonly name = signal('');
   protected readonly busy = signal(false);
   protected readonly error = signal('');
-  protected readonly styles: Record<string, string> = {
-    STEADY_PLANS: 'Steady monthly plans',
-    ROUND_UPS: 'Round-ups into a goal',
-    GOAL_SAVER: 'Saving for a goal',
-    NEW_INVESTOR: 'Just starting out',
-    EXPLORER: 'Exploring many shares',
-  };
+  protected readonly text = value;
 
-  protected async explore(group: GroupCode): Promise<void> {
+  protected hours(minutes: number): string {
+    return minutes % 60 === 0 ? `${minutes / 60} hour${minutes === 60 ? '' : 's'}` : `${minutes} minutes`;
+  }
+
+  protected async explore(): Promise<void> {
+    if (!this.name().trim()) {
+      this.error.set('Tell us what to call you first.');
+      return;
+    }
     this.busy.set(true);
     this.error.set('');
     try {
-      await this.auth.startDemo(group);
+      await this.auth.startDemo(this.name().trim());
       await this.router.navigateByUrl('/home');
     } catch (e) {
       this.error.set(messageOf(e));

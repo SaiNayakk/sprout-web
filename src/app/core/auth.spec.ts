@@ -32,8 +32,8 @@ describe('Auth and the interceptor', () => {
     expect(request.request.headers.get('Authorization')).toBe('Bearer a1');
     request.flush({});
     await call;
-    const pub = firstValueFrom(http.get('/api/sandbox/v1/personas', { context: new HttpContext().set(PUBLIC, true) }));
-    const open = ctl.expectOne('/api/sandbox/v1/personas');
+    const pub = firstValueFrom(http.get('/api/sandbox/v3/demo', { context: new HttpContext().set(PUBLIC, true) }));
+    const open = ctl.expectOne('/api/sandbox/v3/demo');
     expect(open.request.headers.has('Authorization')).toBe(false);
     open.flush({});
     await pub;
@@ -97,8 +97,15 @@ describe('Auth and the interceptor', () => {
   });
 
   it('remembers who is signed in across a reload', () => {
-    const { auth } = setup({ accessToken: 'a', refreshToken: 'r', persona: { name: 'Meera Iyer', pronouns: 'she/her' } });
+    const { auth } = setup({ accessToken: 'a', refreshToken: 'r', name: 'Asha', demoEndsAt: '2026-10-08T20:00:00Z' });
     expect(auth.signedIn()).toBe(true);
+    expect(auth.name()).toBe('Asha');
+    expect(auth.isDemo()).toBe(true);
+    expect(auth.demoEndsAt()).toBe('2026-10-08T20:00:00Z');
+  });
+
+  it('still shows the name of a demo session from before demo accounts of one\'s own', () => {
+    const { auth } = setup({ accessToken: 'a', refreshToken: 'r', persona: { name: 'Meera Iyer', pronouns: 'she/her' } });
     expect(auth.name()).toBe('Meera Iyer');
     expect(auth.isDemo()).toBe(true);
   });

@@ -32,25 +32,17 @@ export interface SignInResponse {
   challengeId?: string;
 }
 
-export type GroupCode = 'WOMEN' | 'MEN' | 'NON_BINARY_AND_OTHER' | 'ANY';
-
-export interface Persona {
-  id: string;
-  name: string;
-  pronouns: string;
-  group: Exclude<GroupCode, 'ANY'>;
-  city: string;
-  story: string;
-  style: 'STEADY_PLANS' | 'ROUND_UPS' | 'GOAL_SAVER' | 'NEW_INVESTOR' | 'EXPLORER';
-}
-
-export interface Personas {
-  groups: { code: GroupCode; label: string }[];
-  personas: Persona[];
+/** Whether the sandbox can give out a demo account now (sandbox v3). */
+export interface DemoStatus {
+  ready: boolean;
+  sessionsLived?: number;
+  endsAfterMinutes: number;
 }
 
 export interface DemoSession extends TokenPair {
-  persona: Persona;
+  name: string;
+  sessionsLived: number;
+  endsAt: string;
 }
 
 export interface Market {
