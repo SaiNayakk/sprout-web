@@ -5,12 +5,14 @@ import { provideRouter } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Auth, PUBLIC } from './auth';
 import { authInterceptor } from './auth.interceptor';
+import { forgetCells } from './cells';
 
 const KEY = 'sprout.session';
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
 function setup(saved: object | null) {
   localStorage.clear();
+  forgetCells();
   if (saved) {
     localStorage.setItem(KEY, JSON.stringify(saved));
   }
@@ -108,5 +110,106 @@ describe('Auth and the interceptor', () => {
     const { auth } = setup({ accessToken: 'a', refreshToken: 'r', persona: { name: 'Meera Iyer', pronouns: 'she/her' } });
     expect(auth.name()).toBe('Meera Iyer');
     expect(auth.isDemo()).toBe(true);
+  });
+});
+
+describe('Cells', () => {
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  const two = { cells: [{ id: 'a', weight: 30 }, { id: 'b', weight: 70 }] };
+  const tokens = { status: 'OK', tokens: { accessToken: 'a1', tokenType: 'Bearer', expiresIn: 900, refreshToken: 'r1' } };
+
+  it('sends X-Sprout-Cell when the session has a cell, on public calls too', async () => {
+    const { http, ctl } = setup({ accessToken: 'a1', refreshToken: 'r1', cell: 'b' });
+    const call = firstValueFrom(http.get('/api/oms/v1/funds'));
+    const request = ctl.expectOne('/api/oms/v1/funds');
+    expect(request.request.headers.get('X-Sprout-Cell')).toBe('b');
+    request.flush({});
+    await call;
+    const pub = firstValueFrom(http.post('/api/identity/v1/tokens/refresh', {}, { context: new HttpContext().set(PUBLIC, true) }));
+    const open = ctl.expectOne('/api/identity/v1/tokens/refresh');
+    expect(open.request.headers.get('X-Sprout-Cell')).toBe('b');
+    expect(open.request.headers.has('Authorization')).toBe(false);
+    open.flush({});
+    await pub;
+  });
+
+  it('sends no cell header for a session saved before cells', async () => {
+    const { http, ctl } = setup({ accessToken: 'a1', refreshToken: 'r1' });
+    const call = firstValueFrom(http.get('/api/oms/v1/funds'));
+    const request = ctl.expectOne('/api/oms/v1/funds');
+    expect(request.request.headers.has('X-Sprout-Cell')).toBe(false);
+    request.flush({});
+    await call;
+  });
+
+  it('tries the other cell when the credentials are refused, and keeps the cell that answered', async () => {
+    const { auth, ctl } = setup(null);
+    const done = auth.signIn('asha@example.com', 'secret-pass');
+    await tick();
+    ctl.expectOne('/cells.json').flush(two);
+    await tick();
+    const first = ctl.expectOne('/api/identity/v1/sessions');
+    const firstCell = first.request.headers.get('X-Sprout-Cell')!;
+    const other = firstCell === 'a' ? 'b' : 'a';
+    first.flush({ code: 'INVALID_CREDENTIALS', title: 'No' }, unauthorized);
+    await tick();
+    const second = ctl.expectOne('/api/identity/v1/sessions');
+    expect(second.request.headers.get('X-Sprout-Cell')).toBe(other);
+    second.flush(tokens, { headers: { 'X-Sprout-Cell': other } });
+    await tick();
+    const me = ctl.expectOne('/api/identity/v1/users/me');
+    expect(me.request.headers.get('X-Sprout-Cell')).toBe(other);
+    me.flush({ displayName: 'Asha' });
+    await done;
+    expect(JSON.parse(localStorage.getItem(KEY)!)).toMatchObject({ cell: other, name: 'Asha' });
+  });
+
+  it('does not try another cell for any other refusal', async () => {
+    const { auth, ctl } = setup(null);
+    const done = auth.signIn('asha@example.com', 'secret-pass').catch((e) => e);
+    await tick();
+    ctl.expectOne('/cells.json').flush(two);
+    await tick();
+    ctl.expectOne('/api/identity/v1/sessions').flush({ code: 'TOO_MANY_ATTEMPTS' }, { status: 429, statusText: 'Too Many' });
+    expect((await done).status).toBe(429);
+    ctl.expectNone('/api/identity/v1/sessions');
+  });
+
+  it('shows the last failure when every cell refuses the credentials', async () => {
+    const { auth, ctl } = setup(null);
+    const done = auth.signIn('asha@example.com', 'wrong').catch((e) => e);
+    await tick();
+    ctl.expectOne('/cells.json').flush(two);
+    await tick();
+    ctl.expectOne('/api/identity/v1/sessions').flush({ code: 'INVALID_CREDENTIALS' }, unauthorized);
+    await tick();
+    ctl.expectOne('/api/identity/v1/sessions').flush({ code: 'INVALID_CREDENTIALS' }, unauthorized);
+    expect((await done).status).toBe(401);
+    expect(localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it('signs in with no header and no retry when there is no cells.json', async () => {
+    const { auth, ctl } = setup(null);
+    const done = auth.signIn('asha@example.com', 'wrong').catch((e) => e);
+    await tick();
+    ctl.expectOne('/cells.json').flush('', { status: 404, statusText: 'Not Found' });
+    await tick();
+    const r = ctl.expectOne('/api/identity/v1/sessions');
+    expect(r.request.headers.has('X-Sprout-Cell')).toBe(false);
+    r.flush({ code: 'INVALID_CREDENTIALS' }, unauthorized);
+    expect((await done).status).toBe(401);
+    ctl.expectNone('/api/identity/v1/sessions');
+  });
+
+  it('remembers the cell a demo account was made in', async () => {
+    const { auth, ctl } = setup(null);
+    const done = auth.startDemo('Asha');
+    ctl.expectOne('/api/sandbox/v3/demo-sessions').flush(
+      { accessToken: 'd1', tokenType: 'Bearer', expiresIn: 900, refreshToken: 'dr', name: 'Asha', sessionsLived: 1, endsAt: '2026-10-09T20:00:00Z' },
+      { headers: { 'X-Sprout-Cell': 'b' } },
+    );
+    await done;
+    expect(auth.cell()).toBe('b');
   });
 });

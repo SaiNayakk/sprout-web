@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
@@ -27,6 +27,11 @@ export class Api {
 
   delete<T>(path: string): Promise<T> {
     return firstValueFrom(this.http.delete<T>('/api' + path));
+  }
+
+  /** True when the server looked at a write and said no (a 4xx but not a timeout or rate limit), so its key is spent. */
+  static refused(e: unknown): boolean {
+    return e instanceof HttpErrorResponse && e.status >= 400 && e.status < 500 && e.status !== 408 && e.status !== 429;
   }
 
   /** A fresh key for one attempt that may be retried: keep it for the retry, make a new one for a new attempt. */
