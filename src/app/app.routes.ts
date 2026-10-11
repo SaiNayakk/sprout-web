@@ -3,6 +3,7 @@ import { setUp, signedIn, signedOut } from './core/guards';
 
 /** Pages load on demand, so the first visit downloads only the front page. */
 export const routes: Routes = [
+  { path: 'status', loadComponent: () => import('./pages/system-status').then((m) => m.SystemStatus), title: 'System status · Sprout' },
   { path: '', canActivate: [signedOut], loadComponent: () => import('./pages/landing').then((m) => m.Landing), title: 'Sprout: grow the habit, not the hype' },
   { path: 'signin', canActivate: [signedOut], loadComponent: () => import('./pages/auth-form').then((m) => m.AuthForm), data: { mode: 'signin' }, title: 'Sign in · Sprout' },
   { path: 'signup', canActivate: [signedOut], loadComponent: () => import('./pages/auth-form').then((m) => m.AuthForm), data: { mode: 'signup' }, title: 'Create your account · Sprout' },
