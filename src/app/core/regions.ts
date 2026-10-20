@@ -1,5 +1,21 @@
 import { Injectable, signal } from '@angular/core';
 
+/**
+ * Returns a human-readable relative time string for a Unix-seconds timestamp.
+ * Future timestamps are clamped to "just now".
+ * @param unixSeconds  The event timestamp in seconds since epoch.
+ * @param nowSeconds   Override for "now" (defaults to Date.now() / 1000). Useful in tests.
+ */
+export function relativeTime(unixSeconds: number, nowSeconds?: number): string {
+  const now = nowSeconds ?? Date.now() / 1000;
+  const diff = Math.max(0, now - unixSeconds); // clamp future timestamps
+  if (diff < 5) return 'just now';
+  if (diff < 60) return `${Math.floor(diff)} s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} h ago`;
+  return `${Math.floor(diff / 86400)} d ago`;
+}
+
 /** The witness: a small service outside both regions that sees each one's heartbeat (deploy/witness in the platform repo). */
 export const WITNESS_URL = 'https://sprout-witness.sai31nayak.workers.dev';
 
