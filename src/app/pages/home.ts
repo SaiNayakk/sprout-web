@@ -26,7 +26,7 @@ import { Status } from '../ui/status';
       </div>
 
       <div class="grid two">
-        <section class="card" aria-labelledby="funds-h">
+        <section class="card" aria-labelledby="funds-h" data-tour="balance">
           <h2 id="funds-h" class="label">Ready to invest</h2>
           <app-status [loading]="funds.loading() && !funds.value()" [error]="funds.error()" (retry)="funds.reload()" />
           @if (funds.value(); as f) {
@@ -64,7 +64,7 @@ import { Status } from '../ui/status';
         </section>
       </div>
 
-      <section class="card" aria-labelledby="hold-h">
+      <section class="card" aria-labelledby="hold-h" data-tour="portfolio">
         <div class="row between">
           <h2 id="hold-h">Your investments</h2>
           @if (rows().length) {

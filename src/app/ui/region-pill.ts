@@ -53,7 +53,7 @@ import { Regions } from '../core/regions';
   `,
   template: `
     @if (regions.status(); as s) {
-      <a routerLink="/status" [attr.aria-label]="'System status: ' + s.summary">
+      <a routerLink="/status" data-tour="region-pill" [attr.aria-label]="'System status: ' + s.summary">
         @for (r of s.regions; track r.id) {
           <span [class]="'dot ' + r.status">
             <!-- Visually hidden: gives each dot a text label for screen readers -->

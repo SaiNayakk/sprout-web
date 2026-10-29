@@ -33,11 +33,11 @@ import { Status } from '../ui/status';
         <table>
           <thead><tr><th>Share</th><th class="right">Price</th><th class="right">Today</th></tr></thead>
           <tbody>
-            @for (i of shown(); track i.symbol) {
+            @for (i of shown(); track i.symbol; let idx = $index) {
               @let q = prices.quotes()[i.symbol];
               <tr>
                 <td>
-                  <a [routerLink]="i.tradable ? ['/markets', i.symbol] : null"><strong>{{ i.symbol }}</strong></a>
+                  <a [routerLink]="i.tradable ? ['/markets', i.symbol] : null" [attr.data-tour]="idx === 0 ? 'buy-stock' : null"><strong>{{ i.symbol }}</strong></a>
                   <div class="small muted">{{ i.name }}@if (i.industry) { · {{ i.industry }} }</div>
                 </td>
                 <td class="right num">{{ q ? inr(q.last) : '–' }}</td>

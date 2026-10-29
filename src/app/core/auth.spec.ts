@@ -206,10 +206,11 @@ describe('Cells', () => {
     const { auth, ctl } = setup(null);
     const done = auth.startDemo('Asha');
     ctl.expectOne('/api/sandbox/v3/demo-sessions').flush(
-      { accessToken: 'd1', tokenType: 'Bearer', expiresIn: 900, refreshToken: 'dr', name: 'Asha', sessionsLived: 1, endsAt: '2026-10-09T20:00:00Z' },
+      { accessToken: 'd1', tokenType: 'Bearer', expiresIn: 900, refreshToken: 'dr', name: 'Asha', sessionsLived: 1, endsAt: '2026-10-09T20:00:00Z', demoSession: 'ds-test-key' },
       { headers: { 'X-Sprout-Cell': 'b' } },
     );
     await done;
     expect(auth.cell()).toBe('b');
+    expect(auth.demoSession()).toBe('ds-test-key');
   });
 });

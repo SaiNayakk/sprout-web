@@ -43,6 +43,7 @@ export interface DemoSession extends TokenPair {
   name: string;
   sessionsLived: number;
   endsAt: string;
+  demoSession?: string;
 }
 
 export interface Market {
