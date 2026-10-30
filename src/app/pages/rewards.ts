@@ -18,12 +18,12 @@ import { Status } from '../ui/status';
       <app-status [loading]="vault.loading() && !vault.value()" [error]="vault.error()" (retry)="vault.reload()" />
       @if (vault.value(); as v) {
         <section class="card reward">
-          <p class="label">Points to spend</p>
-          <p class="big">★ {{ v.balance.available }}</p>
+          <p class="label stat-label">Points to spend</p>
+          <p class="big">★ <span class="num">{{ v.balance.available }}</span></p>
           <p class="small muted">
-            {{ v.balance.habitPoints }} from your habit@if (v.balance.referralPoints) { , {{ v.balance.referralPoints }} from friends }
-            @if (v.balance.spent) { , {{ v.balance.spent }} spent }
-            @if (v.balance.pending) { · {{ v.balance.pending }} more are vesting: points vest 30 days after you invest, if the shares are still yours. }
+            <span class="num">{{ v.balance.habitPoints }}</span> from your habit@if (v.balance.referralPoints) { , <span class="num">{{ v.balance.referralPoints }}</span> from friends }
+            @if (v.balance.spent) { , <span class="num">{{ v.balance.spent }}</span> spent }
+            @if (v.balance.pending) { · <span class="num">{{ v.balance.pending }}</span> more are vesting: points vest 30 days after you invest, if the shares are still yours. }
           </p>
         </section>
 
@@ -35,7 +35,7 @@ import { Status } from '../ui/status';
               <p class="label">{{ i.kind === 'VOUCHER' ? 'Voucher' : i.kind === 'THEME' ? 'App theme' : 'Donation' }}</p>
               <h3>{{ i.name }}</h3>
               <p class="small muted">{{ i.brand }}</p>
-              <p><span class="chip reward">★ {{ i.points }}</span></p>
+              <p><span class="chip reward">★ <span class="num">{{ i.points }}</span></span></p>
               <button class="btn small" type="button" [disabled]="!i.affordable || busy() === i.code" (click)="redeem(i.code, i.name)">
                 {{ busy() === i.code ? 'Redeeming…' : i.affordable ? 'Redeem' : 'Not enough yet' }}
               </button>
@@ -48,7 +48,7 @@ import { Status } from '../ui/status';
         <section class="card">
           <h2>What you've redeemed</h2>
           @for (r of redemptions.value() ?? []; track r.id) {
-            <p class="row between small"><span>{{ r.name }}@if (r.voucherCode) { · code <strong class="mono">{{ r.voucherCode }}</strong> }</span><span class="muted">★ {{ r.points }}</span></p>
+            <p class="row between small"><span>{{ r.name }}@if (r.voucherCode) { · code <strong class="mono">{{ r.voucherCode }}</strong> }</span><span class="muted">★ <span class="num">{{ r.points }}</span></span></p>
           }
         </section>
       }
@@ -60,12 +60,12 @@ import { Status } from '../ui/status';
         @if (referrals.value(); as r) {
           <p>Your code <strong class="mono big-code">{{ r.code }}</strong></p>
           @for (f of r.friends; track $index) {
-            <p class="small row between"><span>Friend who joined {{ f.joinedOn }}</span><span class="chip" [class.reward]="f.rewarded" [class.plain]="!f.rewarded">{{ f.rewarded ? '★ 500 each' : f.monthsInvested + ' of 3 months' }}</span></p>
+            <p class="small row between"><span>Friend who joined <span class="num">{{ f.joinedOn }}</span></span><span class="chip num" [class.reward]="f.rewarded" [class.plain]="!f.rewarded">{{ f.rewarded ? '★ 500 each' : f.monthsInvested + ' of 3 months' }}</span></p>
           }
           @if (r.referredBy) {
             <p class="small muted">You joined with the code {{ r.referredBy }}.</p>
           } @else {
-            <form class="row" (submit)="$event.preventDefault(); claim()" novalidate>
+            <form class="row wrap" (submit)="$event.preventDefault(); claim()" novalidate>
               <input aria-label="A friend's code" placeholder="A friend's code (SPR-…)" style="max-width:15rem" [value]="code()" (input)="code.set(text($event))" />
               <button class="btn secondary small" type="submit">Use code</button>
             </form>
@@ -76,7 +76,10 @@ import { Status } from '../ui/status';
       </section>
     </div>
   `,
-  styles: '.big-code { font-size: 1.2rem; letter-spacing: .05em; }',
+  styles: `
+    .big-code { font-size: var(--text-lg); letter-spacing: 0.05em; overflow-wrap: anywhere; word-break: break-all; }
+    .wrap { flex-wrap: wrap; }
+  `,
 })
 export class Rewards {
   private readonly api = inject(Api);

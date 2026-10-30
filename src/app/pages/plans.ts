@@ -52,7 +52,7 @@ import { Status } from '../ui/status';
         @for (p of plans.value() ?? []; track p.id) {
           <article class="card">
             <div class="row between">
-              <h2><a [routerLink]="['/markets', p.symbol]">{{ p.symbol }}</a> <span class="small muted">{{ inr(p.amount, true) }} a month, on day {{ p.dayOfMonth }}</span></h2>
+              <h2><a [routerLink]="['/markets', p.symbol]">{{ p.symbol }}</a> <span class="small muted"><span class="num">{{ inr(p.amount, true) }}</span> a month, on day <span class="num">{{ p.dayOfMonth }}</span></span></h2>
               <span class="chip" [class.plain]="p.status !== 'ACTIVE'">{{ p.status === 'ACTIVE' ? 'Active' : p.status === 'PAUSED' ? 'Paused' : 'Stopped' }}</span>
             </div>
             @if (p.nextDue && p.status === 'ACTIVE') { <p class="small muted">Next instalment: {{ p.nextDue }}</p> }
@@ -65,7 +65,7 @@ import { Status } from '../ui/status';
                     <tr><td class="mono small">{{ x.month }}</td>
                       <td class="small">
                         <span class="chip" [class.plain]="x.status === 'SKIPPED'" [class.bad]="x.status === 'FAILED'">{{ x.status === 'FILLED' ? 'Bought' : x.status === 'PLACED' ? 'Placing' : x.status === 'SKIPPED' ? 'Skipped' : x.status }}</span>
-                        @if (x.quantity && x.status === 'FILLED') { {{ x.quantity }} at {{ inr(x.price) }} }
+                        @if (x.quantity && x.status === 'FILLED') { <span class="num">{{ x.quantity }}</span> at <span class="num">{{ inr(x.price) }}</span> }
                         @if (x.reason) { <span class="muted"> {{ x.reason }}</span> }
                       </td></tr>
                   }
@@ -85,6 +85,11 @@ import { Status } from '../ui/status';
         }
       </div>
     </div>
+  `,
+  styles: `
+    article.card { min-width: 0; }
+    .card h2 { min-width: 0; overflow-wrap: anywhere; }
+    .chip { flex-shrink: 0; }
   `,
 })
 export class Plans implements OnInit {

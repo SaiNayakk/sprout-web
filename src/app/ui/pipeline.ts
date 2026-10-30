@@ -42,37 +42,47 @@ const SERVICE_LABELS: Record<string, string> = {
       width: 100%;
     }
     .pipeline {
-      margin: 1rem 0;
+      margin: var(--space-4) 0;
       border: 1px solid var(--line);
       background: var(--card);
-      border-radius: var(--radius);
-      padding: 1.1rem 1.15rem;
-      box-shadow: var(--shadow);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4) var(--space-5);
+      box-shadow: none;
     }
     .head {
-      margin-bottom: 0.75rem;
+      margin-bottom: var(--space-3);
+      min-width: 0;
+    }
+    .head > div {
+      min-width: 0;
     }
     .title {
       margin: 0;
-      font-size: 1.1rem;
+      font-size: var(--text-md);
       font-weight: 650;
+    }
+    .order-id {
+      overflow-wrap: anywhere;
+      word-break: break-all;
+      min-width: 0;
     }
     .close-btn {
       min-height: 28px;
       padding: 0.2rem 0.5rem;
       font-size: 1rem;
       line-height: 1;
+      flex-shrink: 0;
     }
     .pending-init {
-      padding: 0.75rem 0;
+      padding: var(--space-3) 0;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: var(--space-2);
     }
     .stepper {
       list-style: none;
       padding: 0;
-      margin: 0.75rem 0;
+      margin: var(--space-3) 0;
       position: relative;
     }
     .stepper::before {
@@ -86,10 +96,10 @@ const SERVICE_LABELS: Record<string, string> = {
     }
     .step-row {
       display: flex;
-      gap: 0.85rem;
-      padding: 0.45rem 0;
+      gap: var(--space-3);
+      padding: var(--space-2) 0;
       position: relative;
-      animation: stepIn 0.3s ease-out;
+      animation: stepIn var(--duration-normal) var(--ease-out);
     }
     @keyframes stepIn {
       from {
@@ -109,13 +119,13 @@ const SERVICE_LABELS: Record<string, string> = {
     .marker {
       width: 26px;
       height: 26px;
-      border-radius: 50%;
+      border-radius: var(--radius-full);
       border: 2px solid var(--line);
       background: var(--card);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.75rem;
+      font-size: var(--text-xs);
       font-weight: 700;
       flex-shrink: 0;
       z-index: 1;
@@ -145,51 +155,54 @@ const SERVICE_LABELS: Record<string, string> = {
     }
     .service {
       font-weight: 650;
-      font-size: 0.95rem;
+      font-size: var(--text-sm);
+      overflow-wrap: anywhere;
     }
     .desc {
-      margin: 0.15rem 0 0;
+      margin: var(--space-1) 0 0;
       color: var(--ink-soft);
+      overflow-wrap: anywhere;
     }
     .detail.error {
-      margin: 0.25rem 0 0;
+      margin: var(--space-1) 0 0;
       font-weight: 600;
       color: var(--loss);
+      overflow-wrap: anywhere;
     }
     .pulse-dot {
       display: inline-block;
       width: 8px;
       height: 8px;
-      border-radius: 50%;
+      border-radius: var(--radius-full);
       background: var(--leaf);
       animation: pulse 1s infinite alternate;
     }
     @keyframes pulse {
       from {
         opacity: 0.3;
-        transform: scale(0.8);
+        transform: scale(0.85);
       }
       to {
         opacity: 1;
-        transform: scale(1.15);
+        transform: scale(1.1);
       }
     }
     .foot {
       border-top: 1px solid var(--line);
-      padding-top: 0.65rem;
-      margin-top: 0.5rem;
+      padding-top: var(--space-2);
+      margin-top: var(--space-2);
     }
     .live-tag {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
+      gap: var(--space-1);
     }
     @media (max-width: 360px) {
       .pipeline {
-        padding: 0.9rem;
+        padding: var(--space-3);
       }
       .service {
-        font-size: 0.875rem;
+        font-size: var(--text-xs);
       }
     }
   `,
@@ -198,7 +211,7 @@ const SERVICE_LABELS: Record<string, string> = {
       <div class="row between head">
         <div>
           <h3 class="title">Trade pipeline</h3>
-          <p class="mono small muted">{{ orderId() }}</p>
+          <p class="mono small muted order-id">{{ orderId() }}</p>
         </div>
         <div class="row">
           @if (regionLabel(); as reg) {

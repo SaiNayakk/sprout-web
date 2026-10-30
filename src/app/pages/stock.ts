@@ -25,11 +25,14 @@ import { Status } from '../ui/status';
       <p><a routerLink="/markets" class="small">← Markets</a></p>
       <app-status [loading]="info.loading() && !info.value()" [error]="info.error()" (retry)="info.reload()" />
       @if (info.value(); as i) {
-        <div class="row between">
-          <div><h1>{{ i.symbol }}</h1><p class="muted">{{ i.name }}@if (i.industry) { · {{ i.industry }} }</p></div>
+        <div class="row between stock-head">
+          <div class="stock-title">
+            <h1>{{ i.symbol }}</h1>
+            <p class="muted">{{ i.name }}@if (i.industry) { · {{ i.industry }} }</p>
+          </div>
           @if (quote(); as q) {
-            <div class="right">
-              <p class="big">{{ inr(q.last) }}</p>
+            <div class="right stock-quote">
+              <p class="big num">{{ inr(q.last) }}</p>
               <p class="num small" [class]="dir(q.change)">{{ q.change > 0 ? '▲ ' : q.change < 0 ? '▼ ' : '' }}{{ percent(q.changePercent) }} today</p>
             </div>
           }
@@ -45,14 +48,14 @@ import { Status } from '../ui/status';
             </div>
             <app-line-chart [points]="closes()" [unit]="i.symbol" />
             @if (quote(); as q) {
-              <div class="grid three small" style="margin-top:.8rem">
-                <div><span class="label">Open</span><p class="num">{{ inr(q.open) }}</p></div>
-                <div><span class="label">High / Low</span><p class="num">{{ inr(q.high) }} / {{ inr(q.low) }}</p></div>
-                <div><span class="label">Yesterday</span><p class="num">{{ inr(q.prevClose) }}</p></div>
+              <div class="grid three small" style="margin-top:var(--space-3)">
+                <div><span class="label stat-label">Open</span><p class="num">{{ inr(q.open) }}</p></div>
+                <div><span class="label stat-label">High / Low</span><p class="num">{{ inr(q.high) }} / {{ inr(q.low) }}</p></div>
+                <div><span class="label stat-label">Yesterday</span><p class="num">{{ inr(q.prevClose) }}</p></div>
               </div>
             }
             @if (held(); as h) {
-              <p class="small">You hold <strong class="num">{{ h.quantity }}</strong> ({{ inr(h.investedValue) }} invested)@if (h.pnl) { , <app-chg [amount]="h.pnl" /> }.</p>
+              <p class="small">You hold <strong class="num">{{ h.quantity }}</strong> (<span class="num">{{ inr(h.investedValue) }}</span> invested)@if (h.pnl) { , <app-chg [amount]="h.pnl" /> }.</p>
             }
           </section>
 
@@ -61,11 +64,11 @@ import { Status } from '../ui/status';
               @if (placed(); as o) {
                 <h2 id="ticket-h">Order {{ o.status === 'FILLED' ? 'done' : o.status === 'REJECTED' ? 'refused' : 'placed' }}</h2>
                 <p>
-                  {{ o.side === 'BUY' ? 'Buy' : 'Sell' }} {{ o.quantity }} × {{ o.symbol }}
+                  {{ o.side === 'BUY' ? 'Buy' : 'Sell' }} <span class="num">{{ o.quantity }}</span> × {{ o.symbol }}
                   <span class="chip" [class.bad]="o.status === 'REJECTED'">{{ statusText(o) }}</span>
                 </p>
                 @if (o.status === 'FILLED') {
-                  <p class="num">at {{ inr(o.price) }} · {{ inr(o.value) }} <span class="muted small">+ {{ inr(o.charges?.total) }} charges</span></p>
+                  <p class="num">at {{ inr(o.price) }} · {{ inr(o.value) }} <span class="muted small">+ <span class="num">{{ inr(o.charges?.total) }}</span> charges</span></p>
                 }
                 @if (o.rejection) { <p class="error">{{ o.rejection.message }}</p> }
 
@@ -81,7 +84,7 @@ import { Status } from '../ui/status';
                   <button class="btn" [class.secondary]="side() !== 'BUY'" type="button" data-tour="buy-stock" (click)="side.set('BUY')">Buy</button>
                   <button class="btn" [class.secondary]="side() !== 'SELL'" type="button" (click)="side.set('SELL')">Sell</button>
                 </div>
-                <form (submit)="$event.preventDefault(); review.set(true)" novalidate style="margin-top:.8rem">
+                <form (submit)="$event.preventDefault(); review.set(true)" novalidate style="margin-top:var(--space-3)">
                   <div class="field"><label for="qty">Quantity</label>
                     <input id="qty" inputmode="numeric" [value]="qty()" (input)="qty.set(digits($event))" /></div>
                   <div class="field"><label for="type">Order type</label>
@@ -107,8 +110,8 @@ import { Status } from '../ui/status';
 
                   @if (review()) {
                     <div class="card soft" role="status">
-                      <p class="label">Review</p>
-                      <p><strong>{{ side() === 'BUY' ? 'Buy' : 'Sell' }} {{ qty() }} × {{ i.symbol }}</strong>
+                      <p class="label">Order review</p>
+                      <p><strong>{{ side() === 'BUY' ? 'Buy' : 'Sell' }} <span class="num">{{ qty() }}</span> × {{ i.symbol }}</strong>
                         {{ type() === 'LIMIT' ? 'at ₹' + limit() + ' or better' : 'at the market price' }}, {{ product() === 'CNC' ? 'delivery' : 'intraday' }}.</p>
                       @if (estimate(); as e) { <p class="num">About {{ inr(e) }} plus charges</p> }
                       <div class="row">
@@ -120,7 +123,7 @@ import { Status } from '../ui/status';
                     <button class="btn block" type="submit">Review order</button>
                   }
                 </form>
-                <p class="small muted" style="margin-top:.8rem">
+                <p class="small muted" style="margin-top:var(--space-3)">
                   Prefer to invest regularly? <a [routerLink]="'/plans'" [queryParams]="{ symbol: i.symbol }">Start a monthly plan</a> or put it towards a <a routerLink="/goals">goal</a>.
                 </p>
               }
@@ -129,6 +132,12 @@ import { Status } from '../ui/status';
         </div>
       }
     </div>
+  `,
+  styles: `
+    .stock-head { min-width: 0; gap: var(--space-4); margin-bottom: var(--space-4); }
+    .stock-title { min-width: 0; }
+    .stock-title h1 { overflow-wrap: anywhere; }
+    .stock-quote { min-width: 0; }
   `,
 })
 export class Stock {

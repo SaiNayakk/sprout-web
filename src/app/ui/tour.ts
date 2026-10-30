@@ -207,23 +207,39 @@ export class TourService {
       z-index: 9999;
       box-shadow: 0 0 0 9999px color-mix(in srgb, var(--ink) 65%, transparent);
       border: 2px solid var(--leaf);
-      border-radius: var(--radius);
+      border-radius: var(--radius-lg);
       pointer-events: none;
-      transition: top 0.25s ease-out, left 0.25s ease-out, width 0.25s ease-out, height 0.25s ease-out;
+      transition: top var(--duration-moderate) var(--ease-out),
+                  left var(--duration-moderate) var(--ease-out),
+                  width var(--duration-moderate) var(--ease-out),
+                  height var(--duration-moderate) var(--ease-out);
     }
     .tour-card {
       position: fixed;
       z-index: 10000;
       background: var(--card);
       border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 1.15rem;
+      border-radius: var(--radius-lg);
+      padding: var(--space-4) var(--space-5);
       box-shadow: 0 10px 32px color-mix(in srgb, var(--ink) 35%, transparent);
       width: min(calc(100vw - 32px), 360px);
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
-      transition: top 0.25s ease-out, left 0.25s ease-out, bottom 0.25s ease-out;
+      gap: var(--space-3);
+      transform-origin: center;
+      opacity: 1;
+      transform: scale(1);
+      transition: opacity var(--duration-normal) var(--ease-out),
+                  transform var(--duration-normal) var(--ease-out),
+                  top var(--duration-moderate) var(--ease-out),
+                  left var(--duration-moderate) var(--ease-out),
+                  bottom var(--duration-moderate) var(--ease-out);
+    }
+    @starting-style {
+      .tour-card {
+        opacity: 0;
+        transform: scale(0.96);
+      }
     }
     .tour-card:focus {
       outline: none;
@@ -232,16 +248,16 @@ export class TourService {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 0.5rem;
+      gap: var(--space-2);
     }
     .tour-title {
       margin: 0;
-      font-size: 1.1rem;
+      font-size: var(--text-md);
       font-weight: 700;
       color: var(--ink);
     }
     .tour-body {
-      font-size: 0.92rem;
+      font-size: var(--text-sm);
       color: var(--ink-soft);
       line-height: 1.45;
       margin: 0;
@@ -249,8 +265,8 @@ export class TourService {
     .tour-links {
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
-      font-size: 0.88rem;
+      gap: var(--space-1);
+      font-size: var(--text-sm);
     }
     .tour-dots {
       display: flex;
@@ -260,12 +276,21 @@ export class TourService {
     .dot-btn {
       width: 8px;
       height: 8px;
-      border-radius: 50%;
+      border-radius: var(--radius-full);
       border: none;
       background: var(--line);
       padding: 0;
       cursor: pointer;
-      transition: background 0.2s ease, transform 0.2s ease;
+      touch-action: manipulation;
+      transition: background var(--duration-fast) ease, transform var(--duration-fast) var(--ease-out);
+    }
+    .dot-btn:active {
+      transform: scale(1.15);
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .dot-btn:hover:not(.active) {
+        background: color-mix(in srgb, var(--ink-soft) 50%, var(--line));
+      }
     }
     .dot-btn.active {
       background: var(--leaf);
@@ -275,17 +300,17 @@ export class TourService {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 0.25rem;
-      padding-top: 0.5rem;
+      margin-top: var(--space-1);
+      padding-top: var(--space-2);
       border-top: 1px solid var(--line);
     }
     .btn-group {
       display: flex;
-      gap: 0.4rem;
+      gap: var(--space-1);
     }
     @media (max-width: 360px) {
       .tour-card {
-        padding: 0.95rem;
+        padding: var(--space-3);
         width: calc(100vw - 24px);
         left: 12px !important;
       }
@@ -326,8 +351,8 @@ export class TourService {
       >
         <div class="tour-header">
           <div>
-            <span class="label" style="font-size:0.72rem">
-              Step {{ tour.currentStepIndex() + 1 }} of {{ tour.totalSteps() }}
+            <span class="label" style="font-size:var(--text-xs)">
+              Step <span class="num">{{ tour.currentStepIndex() + 1 }}</span> of <span class="num">{{ tour.totalSteps() }}</span>
             </span>
             <h2 id="tour-card-title" class="tour-title">{{ tour.currentStep().title }}</h2>
           </div>
@@ -485,7 +510,7 @@ export class Tour {
       } else if (rect.top - cardHeight - 20 > 0) {
         top = `${Math.max(16, rect.top - cardHeight - 12)}px`;
       } else {
-        bottom = 'calc(65px + env(safe-area-inset-bottom))';
+        bottom = 'calc(65px + env(safe-area-inset-bottom, 0px))';
       }
 
       this.cardPosition.set({ top, bottom, left });

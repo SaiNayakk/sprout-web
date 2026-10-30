@@ -35,8 +35,8 @@ interface Link {
           <button class="btn quiet small tour-btn" type="button" (click)="tour.start()">Take the tour</button>
           <span class="chip plain demo-chip" title="You are trying Sprout with a demo account">Demo</span>
         }
-        <button class="btn quiet small" type="button" (click)="menu.set(!menu())" [attr.aria-expanded]="menu()" aria-controls="more">
-          {{ auth.name() || 'Menu' }} ▾
+        <button class="btn quiet small name-btn" type="button" (click)="menu.set(!menu())" [attr.aria-expanded]="menu()" aria-controls="more" [attr.title]="auth.name() || 'Menu'">
+          <span class="name-text">{{ auth.name() || 'Menu' }}</span> ▾
         </button>
       </div>
     </header>
@@ -44,7 +44,7 @@ interface Link {
     @if (menu()) {
       <div class="sheet card" id="more">
         @if (auth.isDemo()) {
-          <button class="btn small" type="button" style="margin-bottom:.7rem; width:100%" (click)="menu.set(false); tour.start()">
+          <button class="btn small" type="button" style="margin-bottom:var(--space-3); width:100%" (click)="menu.set(false); tour.start()">
             Take the tour
           </button>
           <p class="small muted">
@@ -73,24 +73,118 @@ interface Link {
     <app-tour />
   `,
   styles: `
-    .top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 0.75rem; padding: .55rem 16px;
-      background: color-mix(in srgb, var(--chalk) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
-    .brand { display: inline-flex; align-items: center; gap: .5rem; font: 700 1.25rem var(--display); color: var(--ink); text-decoration: none; }
-    .desk { display: none; gap: .25rem; margin-left: .5rem; flex: 1; }
-    .desk a, .more-links a { padding: .4rem .7rem; border-radius: 999px; color: var(--ink-soft); text-decoration: none; font-weight: 600; font-size: .95rem; }
+    .top {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: calc(0.55rem + env(safe-area-inset-top, 0px)) calc(var(--space-4) + env(safe-area-inset-right, 0px)) 0.55rem calc(var(--space-4) + env(safe-area-inset-left, 0px));
+      background: color-mix(in srgb, var(--chalk) 88%, transparent);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font: 700 1.25rem var(--display);
+      color: var(--ink);
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .desk { display: none; gap: var(--space-1); margin-left: var(--space-2); flex: 1; }
+    .desk a, .more-links a {
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+      color: var(--ink-soft);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: var(--text-sm);
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
+    }
     .desk a.on, .more-links a.on { background: var(--leaf-soft); color: var(--leaf-text); }
-    .who { margin-left: auto; display: flex; gap: .4rem; align-items: center; }
-    .tour-btn { font-size: .8rem; padding: .25rem .55rem; min-height: 30px; }
-    .sheet { position: fixed; right: 12px; top: 56px; z-index: 30; width: min(92vw, 380px); }
-    .more-links { display: flex; flex-wrap: wrap; gap: .25rem; margin: .5rem 0 .9rem; }
-    .tabs { position: fixed; inset: auto 0 0 0; z-index: 20; display: grid; grid-template-columns: repeat(5, 1fr);
-      background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
-    .tabs a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: .5rem 0 .45rem; font-size: .72rem;
-      font-weight: 600; color: var(--ink-soft); text-decoration: none; }
+    @media (hover: hover) and (pointer: fine) {
+      .desk a:hover:not(.on), .more-links a:hover:not(.on) {
+        background: color-mix(in srgb, var(--leaf-soft) 60%, transparent);
+        color: var(--ink);
+      }
+    }
+    .who { margin-left: auto; display: flex; gap: var(--space-2); align-items: center; min-width: 0; }
+    .tour-btn { font-size: var(--text-xs); padding: var(--space-1) var(--space-2); min-height: 30px; flex-shrink: 0; }
+    .name-btn {
+      max-width: min(180px, 36vw);
+      overflow: hidden;
+      white-space: nowrap;
+      flex-shrink: 1;
+    }
+    .name-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: inline-block;
+      max-width: min(150px, 28vw);
+      vertical-align: middle;
+    }
+    .sheet {
+      position: fixed;
+      right: calc(12px + env(safe-area-inset-right, 0px));
+      top: calc(56px + env(safe-area-inset-top, 0px));
+      z-index: 30;
+      width: min(calc(100vw - 24px), 380px);
+      box-shadow: var(--shadow);
+      transform-origin: top right;
+      opacity: 1;
+      transform: scale(1);
+      transition: opacity var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+    }
+    @starting-style {
+      .sheet {
+        opacity: 0;
+        transform: scale(0.96);
+      }
+    }
+    .more-links { display: flex; flex-wrap: wrap; gap: var(--space-1); margin: var(--space-2) 0 var(--space-4); }
+    .tabs {
+      position: fixed;
+      inset: auto 0 0 0;
+      z-index: 20;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      background: var(--card);
+      border-top: 1px solid var(--line);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+    }
+    .tabs a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: var(--space-2) 0 var(--space-1);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--ink-soft);
+      text-decoration: none;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: color var(--duration-fast) ease, transform var(--duration-fast) var(--ease-out);
+    }
+    .tabs a:active { transform: scale(0.95); }
     .tabs a span { font-size: 1.25rem; line-height: 1; }
     .tabs a.on { color: var(--leaf-text); }
     @media (max-width: 400px) { .demo-chip { display: none; } }
-    @media (min-width: 860px) { .desk { display: flex; } .tabs { display: none; } .sheet { top: 60px; } }
+    @media (min-width: 860px) {
+      .desk { display: flex; }
+      .tabs { display: none; }
+      .sheet { top: calc(60px + env(safe-area-inset-top, 0px)); }
+    }
   `,
 })
 export class Shell {

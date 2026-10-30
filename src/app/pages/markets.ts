@@ -19,7 +19,7 @@ import { Status } from '../ui/status';
         <h1>Markets</h1>
         @if (market(); as m) {
           <span class="chip" [class.plain]="m.state !== 'OPEN'">{{ m.state === 'OPEN' ? 'Open' : m.state === 'PRE_OPEN' ? 'Opens soon' : 'Closed' }}
-            @if (m.speed > 1) { · {{ m.speed }}× speed }</span>
+            @if (m.speed > 1) { · <span class="num">{{ m.speed }}</span>× speed }</span>
         }
       </div>
       <p class="muted small">
@@ -38,7 +38,7 @@ import { Status } from '../ui/status';
               <tr>
                 <td>
                   <a [routerLink]="i.tradable ? ['/markets', i.symbol] : null" [attr.data-tour]="idx === 0 ? 'buy-stock' : null"><strong>{{ i.symbol }}</strong></a>
-                  <div class="small muted">{{ i.name }}@if (i.industry) { · {{ i.industry }} }</div>
+                  <div class="small muted name-col">{{ i.name }}@if (i.industry) { · {{ i.industry }} }</div>
                 </td>
                 <td class="right num">{{ q ? inr(q.last) : '–' }}</td>
                 <td class="right num" [class]="q ? dir(q.change) : ''">{{ q ? arrow(q.change) + percent(q.changePercent) : '' }}</td>
@@ -50,6 +50,9 @@ import { Status } from '../ui/status';
         </table>
       </div>
     </div>
+  `,
+  styles: `
+    .name-col { max-width: 280px; overflow-wrap: anywhere; }
   `,
 })
 export class Markets {
