@@ -11,12 +11,14 @@ import { Candle, Holding, Instrument, NewOrder, Order } from '../core/types';
 import { Chg } from '../ui/chg';
 import { value } from '../ui/dom';
 import { LineChart } from '../ui/line-chart';
+import { Pipeline } from '../ui/pipeline';
+import { TourService } from '../ui/tour';
 import { Status } from '../ui/status';
 
 /** One share: its live price and history, and the order ticket. An order is always reviewed before it is placed. */
 @Component({
   selector: 'app-stock',
-  imports: [RouterLink, Status, LineChart, Chg],
+  imports: [RouterLink, Status, LineChart, Chg, Pipeline],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -66,6 +68,9 @@ import { Status } from '../ui/status';
                   <p class="num">at {{ inr(o.price) }} · {{ inr(o.value) }} <span class="muted small">+ {{ inr(o.charges?.total) }} charges</span></p>
                 }
                 @if (o.rejection) { <p class="error">{{ o.rejection.message }}</p> }
+
+                <app-pipeline [orderId]="o.id" />
+
                 <div class="row">
                   <button class="btn small" type="button" (click)="placed.set(null)">Another order</button>
                   <a class="btn secondary small" routerLink="/orders">All orders</a>
@@ -73,7 +78,7 @@ import { Status } from '../ui/status';
               } @else {
                 <h2 id="ticket-h">Trade</h2>
                 <div class="row" role="group" aria-label="Buy or sell">
-                  <button class="btn" [class.secondary]="side() !== 'BUY'" type="button" (click)="side.set('BUY')">Buy</button>
+                  <button class="btn" [class.secondary]="side() !== 'BUY'" type="button" data-tour="buy-stock" (click)="side.set('BUY')">Buy</button>
                   <button class="btn" [class.secondary]="side() !== 'SELL'" type="button" (click)="side.set('SELL')">Sell</button>
                 </div>
                 <form (submit)="$event.preventDefault(); review.set(true)" novalidate style="margin-top:.8rem">
@@ -130,6 +135,7 @@ export class Stock {
   private readonly api = inject(Api);
   private readonly prices = inject(Prices);
   private readonly toasts = inject(Toasts);
+  private readonly tour = inject(TourService);
   protected readonly inr = inr;
   protected readonly percent = percent;
   protected readonly dir = direction;
@@ -233,7 +239,9 @@ export class Stock {
     this.busy.set(true);
     this.error.set('');
     try {
-      this.placed.set(await this.api.post<Order>('/oms/v1/orders', order, this.key));
+      const created = await this.api.post<Order>('/oms/v1/orders', order, this.key);
+      this.placed.set(created);
+      this.tour.recordOrder(created.id);
       this.key = Api.key();   // done: the next order is a new attempt
       this.review.set(false);
       void this.holdings.reload();

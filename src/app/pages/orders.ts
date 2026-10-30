@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
 import { Loader } from '../core/loader';
@@ -6,6 +6,8 @@ import { inr } from '../core/money';
 import { messageOf } from '../core/problem';
 import { Toasts } from '../core/toast';
 import { Order } from '../core/types';
+import { Pipeline } from '../ui/pipeline';
+import { TourService } from '../ui/tour';
 import { Status } from '../ui/status';
 
 const WORKING = ['OPEN', 'PENDING', 'AMO_QUEUED'];
@@ -13,7 +15,7 @@ const WORKING = ['OPEN', 'PENDING', 'AMO_QUEUED'];
 /** Every order, newest first, as a broker's order book shows them: refused orders are listed with the reason. */
 @Component({
   selector: 'app-orders',
-  imports: [RouterLink, Status],
+  imports: [RouterLink, Status, Pipeline],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -42,8 +44,22 @@ const WORKING = ['OPEN', 'PENDING', 'AMO_QUEUED'];
                   <p class="num">{{ inr(o.price) }} each · {{ inr(o.value) }} <span class="muted small">+ {{ inr(o.charges?.total) }} charges</span></p>
                 }
                 @if (o.rejection) { <p class="error small">{{ o.rejection.message }}</p> }
-                @if (working(o)) {
-                  <button class="btn secondary small" type="button" [disabled]="cancelling() === o.id" (click)="cancel(o)">Cancel order</button>
+
+                <div class="row" style="margin-top:.4rem">
+                  <button
+                    class="btn quiet small"
+                    type="button"
+                    (click)="activeTraceId.set(activeTraceId() === o.id ? null : o.id)"
+                  >
+                    {{ activeTraceId() === o.id ? 'Hide pipeline' : 'Track pipeline' }}
+                  </button>
+                  @if (working(o)) {
+                    <button class="btn secondary small" type="button" [disabled]="cancelling() === o.id" (click)="cancel(o)">Cancel order</button>
+                  }
+                </div>
+
+                @if (activeTraceId() === o.id) {
+                  <app-pipeline [orderId]="o.id" (closed)="activeTraceId.set(null)" />
                 }
               </article>
             }
@@ -56,9 +72,20 @@ const WORKING = ['OPEN', 'PENDING', 'AMO_QUEUED'];
 export class Orders {
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
+  private readonly tour = inject(TourService);
   protected readonly inr = inr;
   protected readonly cancelling = signal('');
+  protected readonly activeTraceId = signal<string | null>(null);
   protected readonly orders = new Loader<Order[]>(async () => (await this.api.get<{ orders: Order[] }>('/oms/v1/orders')).orders);
+
+  constructor() {
+    effect(() => {
+      const placed = this.tour.placedOrderId();
+      if (placed && this.tour.active() && this.tour.currentStep().id === 'pipeline') {
+        this.activeTraceId.set(placed);
+      }
+    });
+  }
 
   protected working(o: Order): boolean {
     return WORKING.includes(o.status);

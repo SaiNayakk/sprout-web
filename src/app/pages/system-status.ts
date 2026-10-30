@@ -65,7 +65,7 @@ const STATE_LABEL: Record<RegionState, string> = {
     <header class="bar">
       <a routerLink="/" class="brand"><app-logo [size]="32" /> Sprout</a>
     </header>
-    <main class="page">
+    <main class="page" data-tour="system-status">
       <h1>System status</h1>
 
       @if (loading()) {

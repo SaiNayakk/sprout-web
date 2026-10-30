@@ -25,6 +25,7 @@ interface Saved {
   persona?: { name: string };
   /** The cell this customer lives in; absent for a session from before cells or on a single deployment. */
   cell?: string;
+  demoSession?: string;
 }
 
 /**
@@ -50,6 +51,7 @@ export class Auth {
   readonly isDemo = computed(() => this.saved()?.demoEndsAt !== undefined || this.saved()?.persona !== undefined);
   /** When the demo account stops being this visitor's, if it is one. */
   readonly demoEndsAt = computed(() => this.saved()?.demoEndsAt ?? null);
+  readonly demoSession = computed(() => this.saved()?.demoSession ?? null);
 
   constructor() {
     // another tab signed in, refreshed or out: follow it
@@ -136,11 +138,15 @@ export class Auth {
   async startDemo(name: string): Promise<DemoSession> {
     const r = await firstValueFrom(this.http.post<DemoSession>('/api/sandbox/v3/demo-sessions', { name }, { context: NO_AUTH, observe: 'response' }));
     const s = r.body!;
-    this.keep({ accessToken: s.accessToken, refreshToken: s.refreshToken, name: s.name, demoEndsAt: s.endsAt, cell: r.headers.get(CELL_HEADER) ?? undefined });
+    this.keep({ accessToken: s.accessToken, refreshToken: s.refreshToken, name: s.name, demoEndsAt: s.endsAt, cell: r.headers.get(CELL_HEADER) ?? undefined, demoSession: s.demoSession });
     return s;
   }
 
   async signOut(): Promise<void> {
+    const demoKey = this.saved()?.demoSession;
+    if (demoKey && typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+      navigator.sendBeacon('/api/sandbox/v3/demo-sessions/leave', JSON.stringify({ demoSession: demoKey }));
+    }
     try {
       await firstValueFrom(this.http.delete('/api/identity/v1/sessions/current'));
     } catch {

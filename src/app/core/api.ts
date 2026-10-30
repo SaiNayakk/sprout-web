@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
@@ -15,6 +15,18 @@ export class Api {
       }
     }
     return firstValueFrom(this.http.get<T>('/api' + path, { params: p }));
+  }
+
+  getWithHeaders<T>(path: string, params?: Record<string, string | number | boolean | undefined>): Promise<{ body: T; headers: HttpHeaders }> {
+    let p = new HttpParams();
+    for (const [k, v] of Object.entries(params ?? {})) {
+      if (v !== undefined) {
+        p = p.set(k, String(v));
+      }
+    }
+    return firstValueFrom(
+      this.http.get<T>('/api' + path, { params: p, observe: 'response' }),
+    ).then((r) => ({ body: r.body!, headers: r.headers }));
   }
 
   post<T>(path: string, body: unknown = {}, key?: string): Promise<T> {
