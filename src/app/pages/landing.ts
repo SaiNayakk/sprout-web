@@ -26,7 +26,7 @@ import { Logo } from '../ui/logo';
 
     <main class="page">
       @if (presence.notice(); as msg) {
-        <div class="card warn" role="alert" style="margin-bottom: 1.5rem">
+        <div class="card warn" role="alert" style="margin-bottom: var(--space-5)">
           <p>{{ msg }}</p>
         </div>
       }
@@ -57,7 +57,7 @@ import { Logo } from '../ui/logo';
           </form>
 
           @if (queueWaiting()) {
-            <div class="card warn" role="status" style="margin-top: 1rem">
+            <div class="card warn" role="status" style="margin-top: var(--space-4)">
               <p>Every demo account is in use right now - you're next in line</p>
               <p class="small muted">
                 Retrying in <strong class="num">{{ countdown() }}s</strong>…
@@ -80,9 +80,19 @@ import { Logo } from '../ui/logo';
       }
 
       <section class="grid three how">
-        <div class="card"><h3>1 · A plan, not a punt</h3><p class="small">Buy a little every month, on the day you choose. Missing a month is recorded, never bought late.</p></div>
-        <div class="card"><h3>2 · Spare change, invested</h3><p class="small">Round up each UPI spend and sweep it, with your bank's AutoPay permission, into a goal you chose.</p></div>
-        <div class="card reward"><h3>3 · Rewards for staying</h3><p class="small">Points vest only if the money stays invested. Selling early forfeits them, so nothing rewards churning.</p></div>
+        <div class="card">
+          <h3>1 · A plan, not a punt</h3>
+          <p class="small">Buy a little every month, on the day you choose. Missing a month is recorded, never bought late.</p>
+        </div>
+        <div class="card">
+          <h3>2 · Spare change, invested</h3>
+          <p class="small">Round up each UPI spend and sweep it, with your bank's AutoPay permission, into a goal you chose.</p>
+        </div>
+        <div class="card reward">
+          <div class="reward-tag"><span class="chip reward small">★ Reward</span></div>
+          <h3>3 · Rewards for staying</h3>
+          <p class="small">Points vest only if the money stays invested. Selling early forfeits them, so nothing rewards churning.</p>
+        </div>
       </section>
 
       <p class="small muted foot">
@@ -92,17 +102,32 @@ import { Logo } from '../ui/logo';
     </main>
   `,
   styles: `
-    .bar { display: flex; justify-content: space-between; align-items: center; padding: .75rem 16px; max-width: 1080px; margin: 0 auto; }
-    .brand { display: inline-flex; align-items: center; gap: .5rem; font: 700 1.3rem var(--display); }
-    .hero { padding: 1.5rem 0 1rem; max-width: 46rem; }
-    .hero h1 { font-size: clamp(2.2rem, 7vw, 3.6rem); margin: .6rem 0; }
+    .bar { display: flex; justify-content: space-between; align-items: center; padding: var(--space-3) var(--space-4); max-width: 1080px; margin: 0 auto; }
+    .brand { display: inline-flex; align-items: center; gap: var(--space-2); font: 700 1.3rem var(--display); color: var(--ink); text-decoration: none; }
+    .hero { padding: var(--space-6) 0 var(--space-4); max-width: 46rem; min-width: 0; }
+    .hero h1 { font-size: clamp(2.2rem, 7vw, 3.6rem); margin: var(--space-2) 0; overflow-wrap: anywhere; }
     .leaf { color: var(--leaf-text); }
-    .lede { font-size: 1.1rem; color: var(--ink-soft); }
-    .choose { margin: 1rem 0 2rem; }
-    .try { align-items: flex-end; flex-wrap: wrap; gap: .75rem; margin: 1rem 0 .5rem; }
-    .try .grow { flex: 1 1 14rem; margin: 0; }
-    .how { margin: 2rem 0; }
-    .foot { margin-top: 2rem; }
+    .lede { font-size: var(--text-md); color: var(--ink-soft); line-height: 1.5; }
+    .choose { margin: var(--space-4) 0 var(--space-7); }
+    .try { align-items: flex-end; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-4) 0 var(--space-2); }
+    .try .grow { flex: 1 1 14rem; margin: 0; min-width: 0; }
+    .how { margin: var(--space-7) 0; }
+    .reward-tag { margin-bottom: var(--space-2); }
+    .foot {
+      margin-top: var(--space-7);
+      padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+      min-width: 0;
+    }
+    @media (min-width: 768px) {
+      .foot {
+        padding-left: 210px;
+        padding-bottom: var(--space-6);
+      }
+    }
+    @media (max-width: 360px) {
+      .bar { padding: var(--space-2) var(--space-3); }
+      .hero { padding: var(--space-4) 0; }
+    }
   `,
 })
 export class Landing implements OnDestroy {

@@ -28,7 +28,7 @@ interface Demat { dematAccount: string; asOf: string; holdings: DematHolding[] }
     <div class="page">
       <h1>Statements</h1>
       <p class="muted small">Dates are market dates, which run fast in the demo.</p>
-      <div class="row" role="tablist" aria-label="Statements">
+      <div class="row wrap" role="tablist" aria-label="Statements">
         @for (t of tabs; track t.id) {
           <button class="btn small" [class.secondary]="tab() !== t.id" type="button" role="tab" [attr.aria-selected]="tab() === t.id" (click)="open(t.id)">{{ t.label }}</button>
         }
@@ -42,7 +42,7 @@ interface Demat { dematAccount: string; asOf: string; holdings: DematHolding[] }
               <thead><tr><th>Date</th><th>Number</th><th class="right">Trades</th><th class="right">Net</th><th></th></tr></thead>
               <tbody>
                 @for (n of notes.value() ?? []; track n.number) {
-                  <tr><td>{{ n.tradeDate }}</td><td class="mono small">{{ n.number }}</td><td class="right num">{{ n.trades }}</td><td class="right"><app-chg [amount]="n.net" /></td>
+                  <tr><td><span class="num">{{ n.tradeDate }}</span></td><td class="mono small">{{ n.number }}</td><td class="right num">{{ n.trades }}</td><td class="right"><app-chg [amount]="n.net" /></td>
                     <td class="right"><button class="btn quiet small" type="button" (click)="note(n.tradeDate)">{{ detail()?.tradeDate === n.tradeDate ? 'Hide' : 'View' }}</button></td></tr>
                 } @empty { @if (notes.value()) { <tr><td colspan="5" class="empty">No trades yet.</td></tr> } }
               </tbody>
@@ -59,7 +59,7 @@ interface Demat { dematAccount: string; asOf: string; holdings: DematHolding[] }
                     <td class="right num">{{ inr(t.price) }}</td><td class="right num">{{ inr(t.value) }}</td><td class="right num">{{ inr(t.charges) }}</td></tr>
                 }</tbody>
               </table></div>
-              <p class="small">Bought {{ inr(d.bought) }} · sold {{ inr(d.sold) }} · charges {{ inr(d.charges.total) }} · net <app-chg [amount]="d.net" /></p>
+              <p class="small">Bought <span class="num">{{ inr(d.bought) }}</span> · sold <span class="num">{{ inr(d.sold) }}</span> · charges <span class="num">{{ inr(d.charges.total) }}</span> · net <app-chg [amount]="d.net" /></p>
             </section>
           }
         }
@@ -67,7 +67,7 @@ interface Demat { dematAccount: string; asOf: string; holdings: DematHolding[] }
           <app-status [loading]="funds.loading() && !funds.value()" [error]="funds.error()" (retry)="funds.reload()" />
           @if (funds.value(); as f) {
             <section class="card">
-              <p class="small muted">{{ f.from }} to {{ f.to }} · opening {{ inr(f.openingBalance) }} · closing {{ inr(f.closingBalance) }}</p>
+              <p class="small muted"><span class="num">{{ f.from }}</span> to <span class="num">{{ f.to }}</span> · opening <span class="num">{{ inr(f.openingBalance) }}</span> · closing <span class="num">{{ inr(f.closingBalance) }}</span></p>
               <div class="scroll-x"><table>
                 <thead><tr><th>When</th><th>What</th><th class="right">Balance</th></tr></thead>
                 <tbody>@for (l of f.lines.slice(-40).reverse(); track $index) {
@@ -81,17 +81,17 @@ interface Demat { dematAccount: string; asOf: string; holdings: DematHolding[] }
           <app-status [loading]="pnl.loading() && !pnl.value()" [error]="pnl.error()" (retry)="pnl.reload()" />
           @if (pnl.value(); as p) {
             <section class="card">
-              <p class="small muted">{{ p.from }} to {{ p.to }}, as tax treats it</p>
+              <p class="small muted"><span class="num">{{ p.from }}</span> to <span class="num">{{ p.to }}</span>, as tax treats it</p>
               <div class="grid three">
-                <div><span class="label">Intraday</span><p><app-chg [amount]="p.intraday" /></p></div>
-                <div><span class="label">Short term</span><p><app-chg [amount]="p.shortTerm" /></p></div>
-                <div><span class="label">Long term</span><p><app-chg [amount]="p.longTerm" /></p></div>
+                <div><span class="label stat-label">Intraday</span><p><app-chg [amount]="p.intraday" /></p></div>
+                <div><span class="label stat-label">Short term</span><p><app-chg [amount]="p.shortTerm" /></p></div>
+                <div><span class="label stat-label">Long term</span><p><app-chg [amount]="p.longTerm" /></p></div>
               </div>
-              <p>Total <app-chg [amount]="p.total" /> <span class="small muted">· charges {{ inr(p.charges) }}</span></p>
+              <p>Total <app-chg [amount]="p.total" /> <span class="small muted">· charges <span class="num">{{ inr(p.charges) }}</span></span></p>
               <div class="scroll-x"><table>
                 <thead><tr><th>Share</th><th>Type</th><th class="right">Qty</th><th>Bought → sold</th><th class="right">Gain / loss</th></tr></thead>
                 <tbody>@for (l of p.lines; track $index) {
-                  <tr><td>{{ l.symbol }}</td><td class="small">{{ l.category.replace('_', ' ').toLowerCase() }}</td><td class="right num">{{ l.quantity }}</td><td class="small">{{ l.buyDate }} → {{ l.sellDate }}</td><td class="right"><app-chg [amount]="l.pnl" /></td></tr>
+                  <tr><td>{{ l.symbol }}</td><td class="small">{{ l.category.replace('_', ' ').toLowerCase() }}</td><td class="right num">{{ l.quantity }}</td><td class="small"><span class="num">{{ l.buyDate }}</span> → <span class="num">{{ l.sellDate }}</span></td><td class="right"><app-chg [amount]="l.pnl" /></td></tr>
                 } @empty { <tr><td colspan="5" class="empty">No sales yet, so no realised gains.</td></tr> }</tbody>
               </table></div>
             </section>
@@ -101,15 +101,22 @@ interface Demat { dematAccount: string; asOf: string; holdings: DematHolding[] }
           <app-status [loading]="demat.loading() && !demat.value()" [error]="demat.error()" (retry)="demat.reload()" />
           @if (demat.value(); as d) {
             <section class="card">
-              <p class="small muted">Demat account <span class="mono">{{ d.dematAccount }}</span> at the Sprout Depository, as of {{ d.asOf.slice(0, 16).replace('T', ' ') }}. Shares bought today arrive next session.</p>
-              <table><thead><tr><th>Share</th><th class="right">Held</th></tr></thead>
-                <tbody>@for (h of d.holdings; track h.symbol) { <tr><td>{{ h.symbol }}</td><td class="right num">{{ h.quantity }}</td></tr> }
-                  @empty { <tr><td colspan="2" class="empty">Nothing delivered yet.</td></tr> }</tbody></table>
+              <p class="small muted">Demat account <span class="mono">{{ d.dematAccount }}</span> at the Sprout Depository, as of <span class="num">{{ d.asOf.slice(0, 16).replace('T', ' ') }}</span>. Shares bought today arrive next session.</p>
+              <div class="scroll-x">
+                <table>
+                  <thead><tr><th>Share</th><th class="right">Held</th></tr></thead>
+                  <tbody>@for (h of d.holdings; track h.symbol) { <tr><td>{{ h.symbol }}</td><td class="right num">{{ h.quantity }}</td></tr> }
+                    @empty { <tr><td colspan="2" class="empty">Nothing delivered yet.</td></tr> }</tbody>
+                </table>
+              </div>
             </section>
           }
         }
       }
     </div>
+  `,
+  styles: `
+    .wrap { flex-wrap: wrap; gap: var(--space-2); }
   `,
 })
 export class Statements {

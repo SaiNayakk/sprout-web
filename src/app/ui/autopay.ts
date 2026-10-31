@@ -34,11 +34,11 @@ import { value } from './dom';
               <p class="small">Purpose: {{ m.purpose }}</p>
               @if (m.shareSpends) { <p class="small">It will also be told about each UPI payment you make, so it can round them up.</p> }
             </div>
-            <form (submit)="$event.preventDefault(); approve(m)" novalidate style="margin-top:.8rem">
+            <form (submit)="$event.preventDefault(); approve(m)" novalidate style="margin-top:var(--space-3)">
               <div class="field"><label for="apin">UPI PIN</label>
-                <input id="apin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" [value]="pin()" (input)="pin.set(digits($event))" /></div>
+                <input id="apin" class="mono" type="password" inputmode="numeric" autocomplete="off" maxlength="6" [value]="pin()" (input)="pin.set(digits($event))" /></div>
               @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
-              <div class="row">
+              <div class="row wrap">
                 <button class="btn" type="submit" [disabled]="busy()">{{ busy() ? 'Approving…' : 'Approve' }}</button>
                 <button class="btn secondary" type="button" [disabled]="busy()" (click)="decline(m)">Decline</button>
               </div>
@@ -56,6 +56,9 @@ import { value } from './dom';
     } @else {
       <p class="muted" role="status">Loading…</p>
     }
+  `,
+  styles: `
+    .wrap { flex-wrap: wrap; gap: var(--space-2); }
   `,
 })
 export class AutoPayCard implements OnInit {

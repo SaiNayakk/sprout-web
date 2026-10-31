@@ -19,7 +19,7 @@ import { value } from '../ui/dom';
           <p class="muted">Open your authenticator app and type the 6-digit code for Sprout.</p>
           <div class="field">
             <label for="code">Code</label>
-            <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" [value]="code()" (input)="code.set(digits($event))" />
+            <input id="code" class="mono code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" [value]="code()" (input)="code.set(digits($event))" />
           </div>
         } @else {
           <h1>{{ signingUp() ? 'Create your account' : 'Sign in' }}</h1>
@@ -59,9 +59,33 @@ import { value } from '../ui/dom';
     </main>
   `,
   styles: `
-    .wrap { max-width: 420px; margin: 0 auto; padding: 1.5rem 16px 3rem; }
-    .brand { display: inline-flex; align-items: center; gap: .5rem; font: 700 1.3rem var(--display); color: var(--ink); text-decoration: none; margin-bottom: 1rem; }
-    .switch { margin: 1rem 0 0; text-align: center; }
+    .wrap {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: calc(var(--space-5) + env(safe-area-inset-top, 0px))
+               calc(var(--space-3) + env(safe-area-inset-right, 0px))
+               calc(var(--space-6) + env(safe-area-inset-bottom, 0px))
+               calc(var(--space-3) + env(safe-area-inset-left, 0px));
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font: 700 var(--text-xl) var(--display);
+      color: var(--ink);
+      text-decoration: none;
+      margin-bottom: var(--space-3);
+    }
+    .code-input {
+      font-size: var(--text-xl);
+      letter-spacing: 0.25em;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .switch {
+      margin: var(--space-3) 0 0;
+      text-align: center;
+    }
   `,
 })
 export class AuthForm {

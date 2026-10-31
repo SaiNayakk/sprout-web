@@ -17,7 +17,7 @@ import { Status } from '../ui/status';
   template: `
     <div class="page">
       <div class="row between">
-        <h1>{{ greeting() }}</h1>
+        <h1 class="greeting">{{ greeting() }}</h1>
         @if (market(); as m) {
           <span class="chip" [class.plain]="m.state !== 'OPEN'" [title]="m.source">
             Market {{ m.state === 'OPEN' ? 'open' : m.state === 'PRE_OPEN' ? 'opens soon' : 'closed' }} · {{ time(m.marketTime) }}
@@ -27,27 +27,27 @@ import { Status } from '../ui/status';
 
       <div class="grid two">
         <section class="card" aria-labelledby="funds-h" data-tour="balance">
-          <h2 id="funds-h" class="label">Ready to invest</h2>
+          <h2 id="funds-h" class="label stat-label">Ready to invest</h2>
           <app-status [loading]="funds.loading() && !funds.value()" [error]="funds.error()" (retry)="funds.reload()" />
           @if (funds.value(); as f) {
-            <p class="big">{{ inr(f.availableToTrade) }}</p>
+            <p class="big num">{{ inr(f.availableToTrade) }}</p>
             <div class="row small muted">
-              <span>Set aside for orders {{ inr(f.blocked) }}</span>
-              <span>Arriving after a sale {{ inr(f.unsettled) }}</span>
-              @if (f.dues !== '0.00') { <span class="loss">You owe {{ inr(f.dues) }}</span> }
+              <span>Set aside for orders <span class="num">{{ inr(f.blocked) }}</span></span>
+              <span>Arriving after a sale <span class="num">{{ inr(f.unsettled) }}</span></span>
+              @if (f.dues !== '0.00') { <span class="loss">You owe <span class="num">{{ inr(f.dues) }}</span></span> }
             </div>
           }
           <p class="row"><a class="btn small" routerLink="/money">Add money</a><a class="btn secondary small" routerLink="/markets">Invest</a></p>
         </section>
 
         <section class="card" aria-labelledby="hab-h">
-          <h2 id="hab-h" class="label">Your habit</h2>
+          <h2 id="hab-h" class="label stat-label">Your habit</h2>
           <app-status [loading]="habits.loading() && !habits.value()" [error]="habits.error()" (retry)="habits.reload()" />
           @if (habits.value(); as h) {
-            <p class="big">{{ h.streak.months }} <span class="small muted">{{ h.streak.months === 1 ? 'month' : 'months' }} in a row</span></p>
+            <p class="big num">{{ h.streak.months }} <span class="small muted">{{ h.streak.months === 1 ? 'month' : 'months' }} in a row</span></p>
             <p class="small">
               <span class="chip">{{ h.level.name }}</span>
-              @if (h.level.nextName) { <span class="muted"> · {{ h.level.monthsToNext }} more {{ h.level.monthsToNext === 1 ? 'month' : 'months' }} to {{ h.level.nextName }}</span> }
+              @if (h.level.nextName) { <span class="muted"> · <span class="num">{{ h.level.monthsToNext }}</span> more {{ h.level.monthsToNext === 1 ? 'month' : 'months' }} to {{ h.level.nextName }}</span> }
             </p>
             @if (h.streak.atRisk) {
               <p class="small loss">Invest by month end to keep your streak.</p>
@@ -56,8 +56,8 @@ import { Status } from '../ui/status';
               <p class="small muted">{{ h.nudge.message }}</p>
             }
             <p class="small">
-              <span class="chip reward">★ {{ h.points.vested }} points</span>
-              @if (h.points.pending) { <span class="muted"> and {{ h.points.pending }} vesting</span> }
+              <span class="chip reward">★ <span class="num">{{ h.points.vested }}</span> points</span>
+              @if (h.points.pending) { <span class="muted"> and <span class="num">{{ h.points.pending }}</span> vesting</span> }
             </p>
           }
           <p><a class="btn secondary small" routerLink="/habits">See your habit</a></p>
@@ -86,7 +86,7 @@ import { Status } from '../ui/status';
                 @for (r of rows(); track r.symbol) {
                   <tr>
                     <td><a [routerLink]="['/markets', r.symbol]"><strong>{{ r.symbol }}</strong></a>
-                      @if (r.t1) { <span class="chip plain" title="Bought recently; arrives in your demat account next session">{{ r.t1 }} arriving</span> }</td>
+                      @if (r.t1) { <span class="chip plain" title="Bought recently; arrives in your demat account next session"><span class="num">{{ r.t1 }}</span> arriving</span> }</td>
                     <td class="right num">{{ r.quantity }}</td>
                     <td class="right num">{{ inr(r.average) }}</td>
                     <td class="right num">{{ inr(r.last) }}</td>
@@ -113,7 +113,7 @@ import { Status } from '../ui/status';
           }
           @if (round.value(); as r) {
             @if (r.enabled) {
-              <p class="small muted">Round-ups: {{ inr(r.waiting) }} waiting, {{ inr(r.swept) }} saved so far.</p>
+              <p class="small muted">Round-ups: <span class="num">{{ inr(r.waiting) }}</span> waiting, <span class="num">{{ inr(r.swept) }}</span> saved so far.</p>
             }
           }
           <p><a class="btn secondary small" routerLink="/goals">Goals and round-ups</a></p>
@@ -123,14 +123,14 @@ import { Status } from '../ui/status';
           <h2 id="mon-h">This month</h2>
           <app-status [loading]="challenges.loading() && !challenges.value()" [error]="challenges.error()" (retry)="challenges.reload()" />
           @if (challenges.value(); as c) {
-            <p class="small">{{ done() }} of {{ c.length }} challenges done</p>
+            <p class="small"><span class="num">{{ done() }}</span> of <span class="num">{{ c.length }}</span> challenges done</p>
             @for (x of c; track x.code) {
-              <p class="small row between" style="margin:.2rem 0"><span [class.muted]="!x.completed">{{ x.completed ? '✔' : '○' }} {{ x.title }}</span><span class="chip" [class.reward]="x.completed" [class.plain]="!x.completed">{{ x.progress }}/{{ x.target }}</span></p>
+              <p class="small row between" style="margin:var(--space-1) 0"><span [class.muted]="!x.completed">{{ x.completed ? '✔' : '○' }} {{ x.title }}</span><span class="chip" [class.reward]="x.completed" [class.plain]="!x.completed"><span class="num">{{ x.progress }}/{{ x.target }}</span></span></p>
             }
           }
           @if (plans.value(); as pl) {
             @for (p of activePlans(); track p.id) {
-              <p class="small muted">Plan: {{ inr(p.amount, true) }} a month into <strong>{{ p.symbol }}</strong>{{ p.nextDue ? ', next on ' + p.nextDue : '' }}.</p>
+              <p class="small muted">Plan: <span class="num">{{ inr(p.amount, true) }}</span> a month into <strong>{{ p.symbol }}</strong>{{ p.nextDue ? ', next on ' + p.nextDue : '' }}.</p>
             }
           }
           <p><a class="btn secondary small" routerLink="/plans">Plans</a></p>
@@ -138,7 +138,11 @@ import { Status } from '../ui/status';
       </div>
     </div>
   `,
-  styles: `.stack-s > * + * { margin-top: .3rem; } .stack-s { margin-bottom: .8rem; }`,
+  styles: `
+    .greeting { overflow-wrap: anywhere; min-width: 0; }
+    .stack-s > * + * { margin-top: var(--space-1); }
+    .stack-s { margin-bottom: var(--space-3); }
+  `,
 })
 export class Home {
   private readonly api = inject(Api);

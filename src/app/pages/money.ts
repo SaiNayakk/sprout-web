@@ -21,18 +21,18 @@ import { UpiPay } from '../ui/upi-pay';
       <h1>Money</h1>
       <div class="grid two">
         <section class="card" aria-labelledby="sp-h">
-          <h2 id="sp-h" class="label">In Sprout</h2>
+          <h2 id="sp-h" class="label stat-label">In Sprout</h2>
           <app-status [loading]="funds.loading() && !funds.value()" [error]="funds.error()" (retry)="funds.reload()" />
           @if (funds.value(); as f) {
-            <p class="big">{{ inr(f.cash) }}</p>
-            <p class="small muted">Set aside for orders {{ inr(f.blocked) }} · arriving after a sale {{ inr(f.unsettled) }}</p>
+            <p class="big num">{{ inr(f.cash) }}</p>
+            <p class="small muted">Set aside for orders <span class="num">{{ inr(f.blocked) }}</span> · arriving after a sale <span class="num">{{ inr(f.unsettled) }}</span></p>
           }
         </section>
         <section class="card" aria-labelledby="bk-h">
-          <h2 id="bk-h" class="label">In Sprout Bank</h2>
+          <h2 id="bk-h" class="label stat-label">In Sprout Bank</h2>
           <app-status [loading]="bank.loading() && !bank.value()" [error]="bank.error()" (retry)="bank.reload()" />
           @if (bank.value(); as b) {
-            <p class="big">{{ inr(b.balance) }}</p>
+            <p class="big num">{{ inr(b.balance) }}</p>
             <p class="small muted mono">{{ b.vpa }}</p>
           }
         </section>
@@ -91,13 +91,16 @@ import { UpiPay } from '../ui/upi-pay';
       <section class="card" aria-labelledby="mv-h">
         <h2 id="mv-h">Added and withdrawn</h2>
         @for (d of deposits.value() ?? []; track d.id) {
-          <p class="small row between"><span>Added {{ inr(d.amount) }} · {{ when(d.createdAt) }}</span><span class="chip" [class.bad]="d.status === 'FAILED'" [class.plain]="d.status !== 'COMPLETED' && d.status !== 'FAILED'">{{ statusOf(d.status) }}</span></p>
+          <p class="small row between"><span>Added <span class="num">{{ inr(d.amount) }}</span> · {{ when(d.createdAt) }}</span><span class="chip" [class.bad]="d.status === 'FAILED'" [class.plain]="d.status !== 'COMPLETED' && d.status !== 'FAILED'">{{ statusOf(d.status) }}</span></p>
         }
         @for (w of withdrawals.value() ?? []; track w.id) {
-          <p class="small row between"><span>Withdrew {{ inr(w.amount) }} · {{ when(w.createdAt) }}</span><span class="chip" [class.bad]="w.status === 'FAILED'" [class.plain]="w.status === 'PROCESSING'">{{ statusOf(w.status) }}</span></p>
+          <p class="small row between"><span>Withdrew <span class="num">{{ inr(w.amount) }}</span> · {{ when(w.createdAt) }}</span><span class="chip" [class.bad]="w.status === 'FAILED'" [class.plain]="w.status === 'PROCESSING'">{{ statusOf(w.status) }}</span></p>
         }
       </section>
     </div>
+  `,
+  styles: `
+    section.card { min-width: 0; }
   `,
 })
 export class Money {

@@ -17,29 +17,68 @@ const STATE_LABEL: Record<RegionState, string> = {
   imports: [RouterLink, Logo, Status],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
-    a.brand { text-decoration: none; color: var(--ink); }
-    .regions { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin: 18px 0 28px; }
-    .region { padding: 16px 18px; }
-    .region h2 { margin: 0 0 4px; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
+    header.bar {
+      padding: calc(var(--space-3) + env(safe-area-inset-top, 0px))
+               calc(var(--space-3) + env(safe-area-inset-right, 0px))
+               var(--space-3)
+               calc(var(--space-3) + env(safe-area-inset-left, 0px));
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+    }
+    a.brand {
+      text-decoration: none;
+      color: var(--ink);
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font: 700 var(--text-lg) var(--display);
+    }
+    .regions {
+      display: grid;
+      gap: var(--space-3);
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      margin: var(--space-4) 0 var(--space-6);
+    }
+    .region { padding: var(--space-4); }
+    .region h2 {
+      margin: 0 0 var(--space-1);
+      font-size: var(--text-base);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
 
     /* Status dot — colour is a secondary signal only; the text label carries the meaning */
-    .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--line); display: inline-block; flex-shrink: 0; }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: var(--radius-full);
+      background: var(--line);
+      display: inline-block;
+      flex-shrink: 0;
+    }
     .dot.up       { background: var(--leaf); }
     .dot.degraded { background: var(--marigold); }
     .dot.down     { background: var(--loss); }
 
     /* State label colours — always text-on-card safe (WCAG AA) */
-    .state-label { font-size: .8rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; }
+    .state-label {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      padding: 2px var(--space-2);
+      border-radius: var(--radius-full);
+    }
     .state-label.up       { background: var(--leaf-soft);     color: var(--leaf-text); }
     .state-label.degraded { background: var(--marigold-soft); color: var(--marigold-text); }
     .state-label.down     { background: var(--danger-soft);   color: var(--loss); }
     .state-label.unknown  { background: transparent; border: 1px solid var(--line); color: var(--ink-soft); }
 
-    ul.events { list-style: none; padding: 0; margin: 8px 0 0; }
-    ul.events li { display: flex; gap: 14px; padding: 9px 0; border-top: 1px solid var(--line); }
+    ul.events { list-style: none; padding: 0; margin: var(--space-2) 0 0; }
+    ul.events li { display: flex; gap: var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--line); }
     ul.events time { color: var(--ink-soft); font-variant-numeric: tabular-nums; min-width: 5.5rem; }
 
-    .updated { color: var(--ink-soft); font-size: .8rem; margin-bottom: 4px; }
+    .updated { color: var(--ink-soft); font-size: var(--text-xs); margin-bottom: var(--space-1); }
 
     /* ── Skeleton ── */
     @keyframes shimmer {
@@ -47,7 +86,7 @@ const STATE_LABEL: Record<RegionState, string> = {
       to   { background-position:  200% 0; }
     }
     .skel {
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       background: linear-gradient(90deg, var(--line) 25%, color-mix(in srgb, var(--line) 55%, var(--card)) 50%, var(--line) 75%);
       background-size: 200% 100%;
       animation: shimmer 1.4s ease infinite;
@@ -55,8 +94,8 @@ const STATE_LABEL: Record<RegionState, string> = {
     @media (prefers-reduced-motion: reduce) {
       .skel { animation: none; background: var(--line); }
     }
-    .skel-card { padding: 16px 18px; min-height: 90px; }
-    .skel-line { height: 14px; margin: 8px 0; }
+    .skel-card { padding: var(--space-4); min-height: 90px; }
+    .skel-line { height: 14px; margin: var(--space-2) 0; }
     .skel-line.w60 { width: 60%; }
     .skel-line.w40 { width: 40%; }
     .skel-event { height: 36px; border-top: 1px solid var(--line); }
@@ -102,7 +141,7 @@ const STATE_LABEL: Record<RegionState, string> = {
                 <span [class]="'state-label ' + r.status">{{ label(r.status) }}</span>
               </h2>
               <p class="muted small">
-                {{ r.detail }}@if (r.lastSeenSeconds !== null) { · last heard {{ r.lastSeenSeconds }} s ago }
+                {{ r.detail }}@if (r.lastSeenSeconds !== null) { · last heard <span class="num">{{ r.lastSeenSeconds }}</span> s ago }
               </p>
             </section>
           }
@@ -116,6 +155,7 @@ const STATE_LABEL: Record<RegionState, string> = {
             @for (e of s.events; track e.at + e.text) {
               <li>
                 <time
+                  class="num"
                   [attr.datetime]="isoDate(e.at)"
                   [attr.title]="localDate(e.at)"
                   >{{ relative(e.at) }}</time

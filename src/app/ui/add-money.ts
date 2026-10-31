@@ -33,12 +33,12 @@ import { value } from './dom';
             <p><strong>{{ request()?.payeeName }}</strong> is asking for <span class="num">{{ inr(request()?.amount) }}</span>.</p>
             <p class="small muted">Approve it with your UPI PIN. It waits for you for a few minutes.</p>
           </div>
-          <div class="field" style="margin-top:.9rem">
+          <div class="field" style="margin-top:var(--space-3)">
             <label for="pin">UPI PIN</label>
-            <input id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" [value]="pin()" (input)="pin.set(digits($event))" />
+            <input id="pin" class="mono" type="password" inputmode="numeric" autocomplete="off" maxlength="6" [value]="pin()" (input)="pin.set(digits($event))" />
           </div>
           @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
-          <div class="row">
+          <div class="row wrap">
             <button class="btn" type="submit" [disabled]="busy()">{{ busy() ? 'Paying…' : 'Pay ' + inr(request()?.amount) }}</button>
             <button class="btn secondary" type="button" [disabled]="busy()" (click)="decline()">Decline</button>
           </div>
@@ -52,6 +52,9 @@ import { value } from './dom';
         <button class="btn secondary small" type="button" (click)="again()">Add more</button>
       }
     }
+  `,
+  styles: `
+    .wrap { flex-wrap: wrap; gap: var(--space-2); }
   `,
 })
 export class AddMoney {

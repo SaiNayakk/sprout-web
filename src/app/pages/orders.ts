@@ -30,22 +30,22 @@ const WORKING = ['OPEN', 'PENDING', 'AMO_QUEUED'];
               <article class="card">
                 <div class="row between">
                   <h2><a [routerLink]="['/markets', o.symbol]">{{ o.symbol }}</a>
-                    <span class="small muted">{{ o.side === 'BUY' ? 'Buy' : 'Sell' }} {{ o.quantity }}</span></h2>
+                    <span class="small muted">{{ o.side === 'BUY' ? 'Buy' : 'Sell' }} <span class="num">{{ o.quantity }}</span></span></h2>
                   <span class="chip" [class.bad]="o.status === 'REJECTED'" [class.plain]="o.status === 'CANCELLED' || o.status === 'EXPIRED'">{{ label(o) }}</span>
                 </div>
                 <p class="small muted">
-                  {{ o.orderType === 'LIMIT' ? 'Limit ' + inr(o.limitPrice) : 'Market' }} · {{ o.product === 'CNC' ? 'Delivery' : 'Intraday' }}
+                  {{ o.orderType === 'LIMIT' ? 'Limit ' : 'Market' }}@if (o.orderType === 'LIMIT') { <span class="num">{{ inr(o.limitPrice) }}</span> } · {{ o.product === 'CNC' ? 'Delivery' : 'Intraday' }}
                   @if (o.variety === 'AMO') { · After market }
                   @if (o.tag?.startsWith('sip:')) { · <span class="chip plain">Plan</span> }
                   @if (o.tag?.startsWith('goal:')) { · <span class="chip plain">Goal</span> }
                   · {{ when(o.createdAt) }}
                 </p>
                 @if (o.status === 'FILLED') {
-                  <p class="num">{{ inr(o.price) }} each · {{ inr(o.value) }} <span class="muted small">+ {{ inr(o.charges?.total) }} charges</span></p>
+                  <p class="num">{{ inr(o.price) }} each · {{ inr(o.value) }} <span class="muted small">+ <span class="num">{{ inr(o.charges?.total) }}</span> charges</span></p>
                 }
                 @if (o.rejection) { <p class="error small">{{ o.rejection.message }}</p> }
 
-                <div class="row" style="margin-top:.4rem">
+                <div class="row" style="margin-top:var(--space-2)">
                   <button
                     class="btn quiet small"
                     type="button"
@@ -67,6 +67,11 @@ const WORKING = ['OPEN', 'PENDING', 'AMO_QUEUED'];
         }
       }
     </div>
+  `,
+  styles: `
+    article.card { min-width: 0; }
+    .card h2 { min-width: 0; overflow-wrap: anywhere; }
+    .chip { flex-shrink: 0; }
   `,
 })
 export class Orders {

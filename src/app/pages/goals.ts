@@ -28,11 +28,11 @@ import { Status } from '../ui/status';
               <h2>{{ p.name }}</h2>
               <span class="chip" [class.reward]="p.status === 'REACHED'" [class.plain]="p.status === 'CLOSED'">{{ p.status === 'REACHED' ? 'Reached! ★' : p.status === 'CLOSED' ? 'Closed' : 'Growing' }}</span>
             </div>
-            <p class="big">{{ inr(held(p)) }} <span class="small muted">of {{ inr(p.target, true) }}</span></p>
+            <p class="big num">{{ inr(held(p)) }} <span class="small muted">of <span class="num">{{ inr(p.target, true) }}</span></span></p>
             <div class="progress" role="progressbar" [attr.aria-valuenow]="p.progressPercent" aria-valuemin="0" aria-valuemax="100" [attr.aria-label]="p.name + ' progress'"><span [style.width.%]="p.progressPercent"></span></div>
             <p class="small muted">
-              In <strong>{{ p.symbol }}</strong>: {{ p.quantity }} {{ p.quantity === 1 ? 'share' : 'shares' }}, plus {{ inr(p.uninvested) }} waiting to buy the next one.
-              @if (p.monthlyNeeded && p.status !== 'CLOSED') { <br />To reach it by {{ p.targetDate }}: {{ inr(p.monthlyNeeded) }} a month. }
+              In <strong>{{ p.symbol }}</strong>: <span class="num">{{ p.quantity }}</span> {{ p.quantity === 1 ? 'share' : 'shares' }}, plus <span class="num">{{ inr(p.uninvested) }}</span> waiting to buy the next one.
+              @if (p.monthlyNeeded && p.status !== 'CLOSED') { <br />To reach it by {{ p.targetDate }}: <span class="num">{{ inr(p.monthlyNeeded) }}</span> a month. }
             </p>
             @if (p.status !== 'CLOSED') {
               <form class="row" (submit)="$event.preventDefault(); put(p)" novalidate>
@@ -103,7 +103,7 @@ import { Status } from '../ui/status';
                 <thead><tr><th>Spend</th><th class="right">Rounded up</th><th></th></tr></thead>
                 <tbody>
                   @for (x of r.recent.slice(0, 6); track x.spendId) {
-                    <tr><td class="small">{{ x.payeeName }} · {{ inr(x.spent) }}</td><td class="right num">{{ inr(x.amount) }}</td><td class="small muted">{{ x.status === 'SWEPT' ? 'saved' : 'waiting' }}</td></tr>
+                    <tr><td class="small">{{ x.payeeName }} · <span class="num">{{ inr(x.spent) }}</span></td><td class="right num">{{ inr(x.amount) }}</td><td class="small muted">{{ x.status === 'SWEPT' ? 'saved' : 'waiting' }}</td></tr>
                   }
                 </tbody>
               </table></div>
@@ -113,7 +113,12 @@ import { Status } from '../ui/status';
       </div>
     </div>
   `,
-  styles: '.amt { max-width: 11rem; }',
+  styles: `
+    .amt { max-width: 11rem; flex: 1 1 8rem; min-width: 0; }
+    article.card { min-width: 0; }
+    .card h2 { min-width: 0; overflow-wrap: anywhere; }
+    .chip { flex-shrink: 0; }
+  `,
 })
 export class Goals {
   private readonly api = inject(Api);

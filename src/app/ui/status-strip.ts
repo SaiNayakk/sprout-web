@@ -21,19 +21,27 @@ import { Regions } from '../core/regions';
       align-items: center;
       justify-content: center;
       flex-wrap: wrap;
-      gap: 0.35rem 0.5rem;
-      padding: 0.35rem 16px;
-      font-size: 0.78rem;
+      gap: var(--space-1) var(--space-2);
+      padding: var(--space-1) calc(var(--space-4) + env(safe-area-inset-right, 0px)) var(--space-1) calc(var(--space-4) + env(safe-area-inset-left, 0px));
+      font-size: var(--text-xs);
       font-weight: 600;
       background: var(--leaf-soft);
       color: var(--leaf-text);
       border-bottom: 1px solid var(--line);
       text-decoration: none;
-      transition: background 0.15s ease;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
       text-align: center;
     }
-    .strip:hover {
-      background: color-mix(in srgb, var(--leaf-soft) 85%, var(--leaf));
+    .strip:active {
+      opacity: 0.85;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .strip:hover {
+        background: color-mix(in srgb, var(--leaf-soft) 85%, var(--leaf));
+      }
     }
     .dot {
       display: inline-block;
@@ -41,7 +49,7 @@ import { Regions } from '../core/regions';
       height: 7px;
       border-radius: 50%;
       background: var(--leaf);
-      margin-right: 4px;
+      margin-right: var(--space-1);
       vertical-align: middle;
     }
     .dot.degraded {
@@ -57,8 +65,8 @@ import { Regions } from '../core/regions';
     @media (max-width: 360px) {
       .strip {
         font-size: 0.72rem;
-        padding: 0.25rem 8px;
-        gap: 0.2rem 0.35rem;
+        padding-inline: calc(var(--space-2) + env(safe-area-inset-left, 0px));
+        gap: 2px var(--space-1);
       }
     }
   `,

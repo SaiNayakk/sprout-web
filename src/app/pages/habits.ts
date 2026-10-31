@@ -33,18 +33,18 @@ interface Readiness {
       @if (habits.value(); as h) {
         <div class="grid two">
           <section class="card" aria-labelledby="streak-h">
-            <h2 id="streak-h" class="label">Streak</h2>
-            <p class="big">{{ h.streak.months }} <span class="small muted">{{ h.streak.months === 1 ? 'month' : 'months' }} in a row</span></p>
-            <p class="small muted">Longest {{ h.streak.longest }} · freezes {{ h.streak.freezes }} (a freeze covers one missed month; you earn one every 6 months)</p>
+            <h2 id="streak-h" class="label stat-label">Streak</h2>
+            <p class="big"><span class="num">{{ h.streak.months }}</span> <span class="small muted">{{ h.streak.months === 1 ? 'month' : 'months' }} in a row</span></p>
+            <p class="small muted">Longest <span class="num">{{ h.streak.longest }}</span> · freezes <span class="num">{{ h.streak.freezes }}</span> (a freeze covers one missed month; you earn one every 6 months)</p>
             @if (h.streak.atRisk) { <p class="small loss">You haven't invested this month. Do it before the month ends to keep your streak.</p> }
             @if (h.nudge) { <p class="card warn small">{{ h.nudge.message }}</p> }
             <p><span class="chip">{{ h.level.name }}</span>
-              @if (h.level.nextName) { <span class="small muted"> {{ h.level.monthsToNext }} more {{ h.level.monthsToNext === 1 ? 'month' : 'months' }} to {{ h.level.nextName }}</span> }</p>
+              @if (h.level.nextName) { <span class="small muted"> <span class="num">{{ h.level.monthsToNext }}</span> more {{ h.level.monthsToNext === 1 ? 'month' : 'months' }} to {{ h.level.nextName }}</span> }</p>
           </section>
           <section class="card reward" aria-labelledby="pts-h">
-            <h2 id="pts-h" class="label">Points</h2>
-            <p class="big">★ {{ h.points.vested }} <span class="small muted">to spend</span></p>
-            <p class="small">{{ h.points.pending }} vesting (they vest 30 days after you invest, if the shares are still yours) · {{ h.points.forfeited }} lost to selling early.</p>
+            <h2 id="pts-h" class="label stat-label">Points</h2>
+            <p class="big">★ <span class="num">{{ h.points.vested }}</span> <span class="small muted">to spend</span></p>
+            <p class="small"><span class="num">{{ h.points.pending }}</span> vesting (they vest 30 days after you invest, if the shares are still yours) · <span class="num">{{ h.points.forfeited }}</span> lost to selling early.</p>
             <p class="small muted">Only delivery purchases count. Intraday trading never earns anything.</p>
           </section>
         </div>
@@ -52,7 +52,7 @@ interface Readiness {
         @if (h.badges.length) {
           <section class="card" aria-labelledby="badge-h">
             <h2 id="badge-h">Badges</h2>
-            <div class="row">
+            <div class="row wrap">
               @for (b of h.badges; track b.code) { <span class="chip reward" [title]="'Earned ' + b.earnedOn">🏅 {{ b.name }}</span> }
             </div>
           </section>
@@ -65,7 +65,7 @@ interface Readiness {
         <div class="grid two">
           @for (c of challenges.value() ?? []; track c.code) {
             <div class="card" [class.soft]="c.completed">
-              <div class="row between"><strong>{{ c.title }}</strong><span class="chip" [class.reward]="c.completed" [class.plain]="!c.completed">{{ c.completed ? '★ +' + c.points : c.progress + '/' + c.target }}</span></div>
+              <div class="row between"><strong>{{ c.title }}</strong><span class="chip num" [class.reward]="c.completed" [class.plain]="!c.completed">{{ c.completed ? '★ +' + c.points : c.progress + '/' + c.target }}</span></div>
               <p class="small muted">{{ c.description }}</p>
             </div>
           }
@@ -79,33 +79,54 @@ interface Readiness {
           <app-status [loading]="squads.loading() && !squads.value()" [error]="squads.error()" (retry)="squads.reload()" />
           @for (s of squads.value() ?? []; track s.id) {
             <div class="stack-s">
-              <div class="row between"><strong>{{ s.name }}</strong><button class="btn quiet small" type="button" (click)="showSquad(s)">{{ board()?.id === s.id ? 'Hide' : 'Board' }}</button></div>
+              <div class="row between">
+                <strong class="squad-title">{{ s.name }}</strong>
+                <button class="btn quiet small" type="button" (click)="showSquad(s)">{{ board()?.id === s.id ? 'Hide' : 'Board' }}</button>
+              </div>
               <p class="small muted">Invite code <span class="mono">{{ s.inviteCode }}</span></p>
               @if (board()?.id === s.id) {
-                <table><thead><tr><th>#</th><th>Member</th><th class="right">Streak</th><th class="right">Of 12 mo</th></tr></thead><tbody>
-                  @for (m of board()!.members; track m.nickname) {
-                    <tr [class.you]="m.you"><td>{{ m.rank }}</td><td>{{ m.nickname }}{{ m.you ? ' (you)' : '' }}
-                      @if (m.investedRange) { <div class="small muted">{{ m.investedRange }}</div> }</td>
-                      <td class="right num">{{ m.streakMonths }}</td><td class="right num">{{ m.monthsInvestedLast12 }}</td></tr>
-                  }
-                </tbody></table>
+                <div class="scroll-x">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Member</th>
+                        <th class="right">Streak</th>
+                        <th class="right">Of 12 mo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (m of board()!.members; track m.nickname) {
+                        <tr [class.you]="m.you">
+                          <td class="num">{{ m.rank }}</td>
+                          <td class="member-cell">
+                            <span class="member-name">{{ m.nickname }}{{ m.you ? ' (you)' : '' }}</span>
+                            @if (m.investedRange) { <div class="small muted">{{ m.investedRange }}</div> }
+                          </td>
+                          <td class="right num">{{ m.streakMonths }}</td>
+                          <td class="right num">{{ m.monthsInvestedLast12 }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
               }
             </div>
           }
           <form (submit)="$event.preventDefault(); joinSquad()" novalidate>
             <div class="field"><label for="nick">Your nickname in a squad</label><input id="nick" maxlength="24" [value]="nick()" (input)="nick.set(text($event))" /></div>
-            <div class="row">
+            <div class="row wrap">
               <input aria-label="Invite code" placeholder="Invite code" style="max-width:11rem" [value]="invite()" (input)="invite.set(text($event))" />
               <button class="btn small" type="submit">Join</button>
             </div>
           </form>
-          <form (submit)="$event.preventDefault(); newSquad()" novalidate style="margin-top:.8rem">
-            <div class="row">
+          <form (submit)="$event.preventDefault(); newSquad()" novalidate style="margin-top:var(--space-3)">
+            <div class="row wrap">
               <input aria-label="New squad name" placeholder="Name a new squad" style="max-width:15rem" [value]="squadName()" (input)="squadName.set(text($event))" />
               <button class="btn secondary small" type="submit">Start a squad</button>
             </div>
           </form>
-          <label class="row small" style="margin-top:.8rem"><input type="checkbox" [checked]="showRange()" (change)="setRange($event)" /> Show a range for how much I've invested (never the amount)</label>
+          <label class="row small" style="margin-top:var(--space-3)"><input type="checkbox" [checked]="showRange()" (change)="setRange($event)" /> Show a range for how much I've invested (never the amount)</label>
         </section>
 
         <section class="card" aria-labelledby="rd-h">
@@ -118,7 +139,7 @@ interface Readiness {
             <button class="btn small" type="submit">Check</button>
           </form>
           @if (readiness(); as r) {
-            <div class="card" [class.soft]="r.ready" [class.warn]="!r.ready" style="margin-top:.8rem">
+            <div class="card" [class.soft]="r.ready" [class.warn]="!r.ready" style="margin-top:var(--space-3)">
               <p><strong>{{ r.ready ? 'You look ready.' : 'A few things first.' }}</strong></p>
               <ul>@for (a of r.advice; track a) { <li class="small">{{ a }}</li> }</ul>
             </div>
@@ -130,7 +151,7 @@ interface Readiness {
         <section class="card" aria-labelledby="fy-h">
           <h2 id="fy-h">Future you</h2>
           <p class="small muted">What a monthly amount could grow to. An illustration with made-up rates, not a promise.</p>
-          <form class="row" (submit)="$event.preventDefault(); project()" novalidate>
+          <form class="row wrap" (submit)="$event.preventDefault(); project()" novalidate>
             <input aria-label="Monthly amount" inputmode="decimal" style="max-width:9rem" [value]="monthly()" (input)="monthly.set(text($event))" />
             <span class="small">a month for</span>
             <input aria-label="Years" inputmode="numeric" style="max-width:5rem" [value]="years()" (input)="years.set(text($event))" />
@@ -139,7 +160,7 @@ interface Readiness {
           </form>
           @if (future(); as f) {
             <p class="small">You'd put in <span class="num">{{ inr(f.invested) }}</span>. At different yearly rates it could be:</p>
-            @for (r of f.rates; track r.yearlyRatePercent) { <p class="row between small"><span>{{ r.yearlyRatePercent }}% a year</span><strong class="num">{{ inr(r.finalValue) }}</strong></p> }
+            @for (r of f.rates; track r.yearlyRatePercent) { <p class="row between small"><span><span class="num">{{ r.yearlyRatePercent }}</span>% a year</span><strong class="num">{{ inr(r.finalValue) }}</strong></p> }
           }
         </section>
 
@@ -148,17 +169,23 @@ interface Readiness {
           <app-status [loading]="wrapped.loading() && !wrapped.value()" [error]="wrapped.error()" (retry)="wrapped.reload()" />
           @if (wrapped.value(); as w) {
             <p class="big">{{ w.title }}</p>
-            <p class="small">{{ w.year }}: invested in <strong>{{ w.monthsInvested }}</strong> {{ w.monthsInvested === 1 ? 'month' : 'months' }}, longest run <strong>{{ w.longestStreak }}</strong>,
-              <strong>{{ w.purchases }}</strong> {{ w.purchases === 1 ? 'purchase' : 'purchases' }} across <strong>{{ w.differentShares }}</strong> {{ w.differentShares === 1 ? 'share' : 'shares' }}
+            <p class="small"><span class="num">{{ w.year }}</span>: invested in <strong class="num">{{ w.monthsInvested }}</strong> {{ w.monthsInvested === 1 ? 'month' : 'months' }}, longest run <strong class="num">{{ w.longestStreak }}</strong>,
+              <strong class="num">{{ w.purchases }}</strong> {{ w.purchases === 1 ? 'purchase' : 'purchases' }} across <strong class="num">{{ w.differentShares }}</strong> {{ w.differentShares === 1 ? 'share' : 'shares' }}
               (<span class="num">{{ inr(w.invested) }}</span>).
               @if (w.topShare) { Most bought: <strong>{{ w.topShare.symbol }}</strong>. }
-              {{ w.planInstalments }} from plans, {{ w.potPurchases }} for goals, {{ w.challengesCompleted }} {{ w.challengesCompleted === 1 ? 'challenge' : 'challenges' }} done, {{ w.pointsEarned }} points earned.</p>
+              <span class="num">{{ w.planInstalments }}</span> from plans, <span class="num">{{ w.potPurchases }}</span> for goals, <span class="num">{{ w.challengesCompleted }}</span> {{ w.challengesCompleted === 1 ? 'challenge' : 'challenges' }} done, <span class="num">{{ w.pointsEarned }}</span> points earned.</p>
           }
         </section>
       </div>
     </div>
   `,
-  styles: `.stack-s { margin-bottom: 1rem; } tr.you td { background: var(--leaf-soft); }`,
+  styles: `
+    .stack-s { margin-bottom: var(--space-4); }
+    .squad-title { min-width: 0; overflow-wrap: anywhere; }
+    .member-cell { max-width: 180px; overflow-wrap: anywhere; }
+    .wrap { flex-wrap: wrap; }
+    tr.you td { background: var(--leaf-soft); }
+  `,
 })
 export class HabitsPage {
   private readonly api = inject(Api);

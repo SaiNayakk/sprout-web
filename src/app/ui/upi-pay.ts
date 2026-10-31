@@ -23,7 +23,7 @@ import { value } from './dom';
       <div class="field"><label for="pamount">Amount (₹)</label>
         <input id="pamount" inputmode="decimal" placeholder="46" [value]="amount()" (input)="amount.set(text($event)); renew()" /></div>
       <div class="field"><label for="ppin">UPI PIN</label>
-        <input id="ppin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" [value]="pin()" (input)="pin.set(digits($event))" /></div>
+        <input id="ppin" class="mono" type="password" inputmode="numeric" autocomplete="off" maxlength="6" [value]="pin()" (input)="pin.set(digits($event))" /></div>
       @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
       <button class="btn" type="submit" [disabled]="busy()">{{ busy() ? 'Paying…' : 'Pay' }}</button>
     </form>

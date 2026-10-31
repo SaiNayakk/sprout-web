@@ -17,7 +17,7 @@ type Step = 'loading' | 'bank' | 'account' | 'money';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page narrow">
-      <h1>Welcome{{ auth.name() ? ', ' + auth.name() : '' }}</h1>
+      <h1 class="welcome-h1">Welcome{{ auth.name() ? ', ' + auth.name() : '' }}</h1>
       <p class="muted">Three short steps. Everything here is simulated, so nothing you enter is checked against anything real.</p>
       <ol class="steps" aria-label="Setup steps">
         <li [class.on]="step() === 'bank'" [class.done]="rank() > 1">Bank account</li>
@@ -31,14 +31,14 @@ type Step = 'loading' | 'bank' | 'account' | 'money';
         @case ('bank') {
           <form class="card" (submit)="$event.preventDefault(); openBank()" novalidate>
             <h2>Open your Sprout Bank account</h2>
-            <p class="muted small">Sprout Bank is a pretend bank with pretend money (₹1,00,000 to start). Your UPI PIN approves payments.</p>
+            <p class="muted small">Sprout Bank is a pretend bank with pretend money (<span class="num">₹1,00,000</span> to start). Your UPI PIN approves payments.</p>
             <div class="field">
               <label for="holder">Name on the account</label>
               <input id="holder" autocomplete="name" [value]="holder()" (input)="holder.set(text($event))" />
             </div>
             <div class="field">
               <label for="pin">Choose a UPI PIN (4 or 6 digits)</label>
-              <input id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" [value]="pin()" (input)="pin.set(digits($event))" />
+              <input id="pin" class="mono" type="password" inputmode="numeric" autocomplete="off" maxlength="6" [value]="pin()" (input)="pin.set(digits($event))" />
               <p class="hint">Not all the same digit and not a run like 1234.</p>
             </div>
             @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
@@ -83,9 +83,10 @@ type Step = 'loading' | 'bank' | 'account' | 'money';
     </div>
   `,
   styles: `
-    .narrow { max-width: 560px; }
-    .steps { display: flex; gap: .5rem; list-style: none; padding: 0; margin: 1rem 0; flex-wrap: wrap; }
-    .steps li { padding: .3rem .8rem; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-soft); font-size: .85rem; font-weight: 600; }
+    .narrow { max-width: 560px; margin: 0 auto; }
+    .welcome-h1 { min-width: 0; overflow-wrap: anywhere; }
+    .steps { display: flex; gap: var(--space-2); list-style: none; padding: 0; margin: var(--space-3) 0; flex-wrap: wrap; }
+    .steps li { padding: var(--space-1) var(--space-3); border-radius: var(--radius-full); border: 1px solid var(--line); color: var(--ink-soft); font-size: var(--text-sm); font-weight: 600; }
     .steps li.on { background: var(--leaf); border-color: var(--leaf); color: var(--on-leaf); }
     .steps li.done { background: var(--leaf-soft); color: var(--leaf-text); border-color: transparent; }
   `,
