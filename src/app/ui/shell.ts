@@ -81,8 +81,7 @@ interface Link {
       align-items: center;
       gap: var(--space-3);
       padding: calc(0.55rem + env(safe-area-inset-top, 0px)) calc(var(--space-4) + env(safe-area-inset-right, 0px)) 0.55rem calc(var(--space-4) + env(safe-area-inset-left, 0px));
-      background: color-mix(in srgb, var(--chalk) 88%, transparent);
-      backdrop-filter: blur(10px);
+      background: var(--chalk);   /* solid: a blur behind a sticky header is redrawn on every scrolled frame */
       border-bottom: 1px solid var(--line);
     }
     .brand {
