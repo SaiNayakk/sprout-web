@@ -200,7 +200,6 @@ export class TourService {
       inset: 0;
       background: color-mix(in srgb, var(--ink) 65%, transparent);
       z-index: 9998;
-      backdrop-filter: blur(2px);
     }
     .tour-spotlight {
       position: fixed;
@@ -209,6 +208,9 @@ export class TourService {
       border: 2px solid var(--leaf);
       border-radius: var(--radius-lg);
       pointer-events: none;
+    }
+    /* glides only between steps: while the page scrolls it stays on its target instead of trailing behind */
+    .tour-spotlight.moving {
       transition: top var(--duration-moderate) var(--ease-out),
                   left var(--duration-moderate) var(--ease-out),
                   width var(--duration-moderate) var(--ease-out),
@@ -229,6 +231,10 @@ export class TourService {
       transform-origin: center;
       opacity: 1;
       transform: scale(1);
+      transition: opacity var(--duration-normal) var(--ease-out),
+                  transform var(--duration-normal) var(--ease-out);
+    }
+    .tour-card.moving {
       transition: opacity var(--duration-normal) var(--ease-out),
                   transform var(--duration-normal) var(--ease-out),
                   top var(--duration-moderate) var(--ease-out),
@@ -327,6 +333,7 @@ export class TourService {
       @if (spotlightRect(); as rect) {
         <div
           class="tour-spotlight"
+          [class.moving]="moving()"
           [style.top.px]="rect.top"
           [style.left.px]="rect.left"
           [style.width.px]="rect.width"
@@ -344,6 +351,7 @@ export class TourService {
         aria-labelledby="tour-card-title"
         aria-describedby="tour-card-desc"
         tabindex="-1"
+        [class.moving]="moving()"
         [style.top]="cardPosition().top"
         [style.bottom]="cardPosition().bottom"
         [style.left]="cardPosition().left"
@@ -436,6 +444,11 @@ export class Tour {
     left: 'calc(50% - 180px)',
   });
 
+  /** True for a moment after the step changes, so the spotlight and card glide to the new target. */
+  protected readonly moving = signal(false);
+  private movingTimer: ReturnType<typeof setTimeout> | null = null;
+  private frame = 0;
+
   private previousActiveElement: HTMLElement | null = null;
 
   constructor() {
@@ -444,7 +457,8 @@ export class Tour {
         const step = this.tour.currentStep();
         if (typeof document !== 'undefined') {
           this.previousActiveElement ??= document.activeElement as HTMLElement | null;
-          this.recalculateTarget(this.tour.stepTargetSelector());
+          this.glide();
+          this.recalculateTarget(this.tour.stepTargetSelector(), true);
         }
       } else {
         this.spotlightRect.set(null);
@@ -456,70 +470,82 @@ export class Tour {
     });
 
     if (typeof window !== 'undefined') {
+      // follows the page at most once a frame, and never scrolls it: scrolling to the target is for a new step only
       const update = () => {
-        if (this.tour.active()) {
-          this.recalculateTarget(this.tour.stepTargetSelector());
-        }
+        if (!this.tour.active() || this.frame) return;
+        this.frame = requestAnimationFrame(() => {
+          this.frame = 0;
+          if (this.tour.active()) {
+            this.position(this.tour.stepTargetSelector(), false);
+          }
+        });
       };
       window.addEventListener('resize', update, { passive: true });
       window.addEventListener('scroll', update, { passive: true });
     }
   }
 
-  private recalculateTarget(selector: string): void {
+  private glide(): void {
+    this.moving.set(true);
+    if (this.movingTimer) clearTimeout(this.movingTimer);
+    this.movingTimer = setTimeout(() => this.moving.set(false), 400);
+  }
+
+  private recalculateTarget(selector: string, scroll: boolean): void {
     if (typeof document === 'undefined') return;
-
-    // Retry finding element if not immediately in DOM
-    const findAndPosition = () => {
-      let target: HTMLElement | null = null;
-      if (selector) {
-        try {
-          target = document.querySelector(selector);
-        } catch {
-          target = null;
-        }
-      }
-
-      if (!target) {
-        this.spotlightRect.set(null);
-        this.cardPosition.set({
-          top: '25%',
-          left: 'max(16px, calc(50% - 180px))',
-        });
-        return;
-      }
-
-      target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      const rect = target.getBoundingClientRect();
-      const pad = 6;
-      this.spotlightRect.set({
-        top: Math.max(0, rect.top - pad),
-        left: Math.max(0, rect.left - pad),
-        width: rect.width + pad * 2,
-        height: rect.height + pad * 2,
-      });
-
-      const cardWidth = Math.min(window.innerWidth - 32, 360);
-      const cardHeight = 250;
-      let top: string | undefined;
-      let bottom: string | undefined;
-      const left = `${Math.max(16, Math.min(rect.left, window.innerWidth - cardWidth - 16))}px`;
-
-      if (rect.bottom + cardHeight + 20 < window.innerHeight) {
-        top = `${rect.bottom + 12}px`;
-      } else if (rect.top - cardHeight - 20 > 0) {
-        top = `${Math.max(16, rect.top - cardHeight - 12)}px`;
-      } else {
-        bottom = 'calc(65px + env(safe-area-inset-bottom, 0px))';
-      }
-
-      this.cardPosition.set({ top, bottom, left });
-    };
-
-    findAndPosition();
+    this.position(selector, scroll);
     // Run second check shortly after in case of route transition
-    setTimeout(findAndPosition, 120);
+    setTimeout(() => this.position(selector, scroll), 120);
     setTimeout(() => this.nextBtnEl()?.nativeElement?.focus(), 150);
+  }
+
+  /** Places the spotlight and card on the step's target; scrolls the target into view only when asked. */
+  private position(selector: string, scroll: boolean): void {
+    let target: HTMLElement | null = null;
+    if (selector) {
+      try {
+        target = document.querySelector(selector);
+      } catch {
+        target = null;
+      }
+    }
+
+    if (!target) {
+      this.spotlightRect.set(null);
+      this.cardPosition.set({
+        top: '25%',
+        left: 'max(16px, calc(50% - 180px))',
+      });
+      return;
+    }
+
+    if (scroll) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    const rect = target.getBoundingClientRect();
+    const pad = 6;
+    this.spotlightRect.set({
+      top: Math.max(0, rect.top - pad),
+      left: Math.max(0, rect.left - pad),
+      width: rect.width + pad * 2,
+      height: rect.height + pad * 2,
+    });
+
+    const cardWidth = Math.min(window.innerWidth - 32, 360);
+    const cardHeight = 250;
+    let top: string | undefined;
+    let bottom: string | undefined;
+    const left = `${Math.max(16, Math.min(rect.left, window.innerWidth - cardWidth - 16))}px`;
+
+    if (rect.bottom + cardHeight + 20 < window.innerHeight) {
+      top = `${rect.bottom + 12}px`;
+    } else if (rect.top - cardHeight - 20 > 0) {
+      top = `${Math.max(16, rect.top - cardHeight - 12)}px`;
+    } else {
+      bottom = 'calc(65px + env(safe-area-inset-bottom, 0px))';
+    }
+
+    this.cardPosition.set({ top, bottom, left });
   }
 
   protected onKeydown(event: KeyboardEvent): void {

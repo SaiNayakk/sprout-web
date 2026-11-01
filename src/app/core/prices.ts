@@ -1,5 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Auth } from './auth';
+import { CELL_HEADER } from './cells';
 import { SseParser } from './sse';
 import { Market, Quote } from './types';
 
@@ -32,8 +33,15 @@ export class Prices {
     while (!stop.aborted) {
       try {
         const token = this.auth.accessToken();
+        const cell = this.auth.cell();
         const res = await fetch('/api/marketdata/v1/stream?symbols=' + encodeURIComponent(symbols.join(',')), {
-          headers: { Accept: 'text/event-stream', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          // fetch skips the interceptor, so the customer's cell is named here: without it the stream can land on the
+          // other cell, which doesn't know this cell's tokens and refuses it with 401, again and again
+          headers: {
+            Accept: 'text/event-stream',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(cell ? { [CELL_HEADER]: cell } : {}),
+          },
           signal: stop,
         });
         if (res.status === 401) {

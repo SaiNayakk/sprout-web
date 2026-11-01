@@ -155,4 +155,30 @@ describe('Tour Component', () => {
     component['onKeydown'](event);
     expect(skipSpy).toHaveBeenCalled();
   });
+
+  it('scrolls to the target of a new step, but never pulls the page back while the visitor scrolls', async () => {
+    await service.start();
+    const selector = service.stepTargetSelector();
+    expect(selector).not.toBe('');
+    const target = document.createElement('div');
+    target.setAttribute(selector.slice(1, selector.indexOf('=')), selector.slice(selector.indexOf('"') + 1, selector.lastIndexOf('"')));
+    document.body.appendChild(target);
+    const scrolled = vi.fn();
+    target.scrollIntoView = scrolled;
+    try {
+      component['recalculateTarget'](selector, true);
+      expect(scrolled).toHaveBeenCalled();
+      await new Promise((r) => setTimeout(r, 200));   // the step's own second look, after a route change
+
+      scrolled.mockClear();
+      for (let i = 0; i < 5; i++) {
+        window.dispatchEvent(new Event('scroll'));
+      }
+      await new Promise((r) => setTimeout(r, 200));
+      expect(scrolled).not.toHaveBeenCalled();
+      expect(component['spotlightRect']()).not.toBeNull();
+    } finally {
+      target.remove();
+    }
+  });
 });
