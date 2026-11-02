@@ -72,7 +72,7 @@ import { Status } from '../ui/status';
                 }
                 @if (o.rejection) { <p class="error">{{ o.rejection.message }}</p> }
 
-                <app-pipeline [orderId]="o.id" />
+                <app-pipeline [orderId]="o.id" [embedded]="true" />
 
                 <div class="row">
                   <button class="btn small" type="button" (click)="placed.set(null)">Another order</button>

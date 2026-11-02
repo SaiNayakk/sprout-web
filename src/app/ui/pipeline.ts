@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, signal, untracked } from '@angular/core';
 import { Api } from '../core/api';
 import { CELL_HEADER } from '../core/cells';
 import { Regions } from '../core/regions';
@@ -48,6 +48,25 @@ const SERVICE_LABELS: Record<string, string> = {
       border-radius: var(--radius-lg);
       padding: var(--space-4) var(--space-5);
       box-shadow: none;
+      animation: pipelineIn var(--duration-moderate) var(--ease-out);
+    }
+    /* inside a card that already frames it: a section of that card, not a card within a card */
+    .pipeline.embedded {
+      margin: var(--space-3) 0;
+      border: 0;
+      border-top: 1px solid var(--line);
+      border-radius: 0;
+      background: transparent;
+      padding: var(--space-4) 0 0;
+    }
+    :host(:last-child) .pipeline.embedded {
+      margin-bottom: 0;
+    }
+    @keyframes pipelineIn {
+      from {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
     }
     .head {
       margin-bottom: var(--space-3);
@@ -65,13 +84,6 @@ const SERVICE_LABELS: Record<string, string> = {
       overflow-wrap: anywhere;
       word-break: break-all;
       min-width: 0;
-    }
-    .close-btn {
-      min-height: 28px;
-      padding: 0.2rem 0.5rem;
-      font-size: 1rem;
-      line-height: 1;
-      flex-shrink: 0;
     }
     .pending-init {
       padding: var(--space-3) 0;
@@ -99,7 +111,7 @@ const SERVICE_LABELS: Record<string, string> = {
       gap: var(--space-3);
       padding: var(--space-2) 0;
       position: relative;
-      animation: stepIn var(--duration-normal) var(--ease-out);
+      animation: stepIn var(--duration-normal) var(--ease-out) backwards;
     }
     @keyframes stepIn {
       from {
@@ -112,6 +124,7 @@ const SERVICE_LABELS: Record<string, string> = {
       }
     }
     @media (prefers-reduced-motion: reduce) {
+      .pipeline,
       .step-row {
         animation: none;
       }
@@ -198,7 +211,7 @@ const SERVICE_LABELS: Record<string, string> = {
       gap: var(--space-1);
     }
     @media (max-width: 360px) {
-      .pipeline {
+      .pipeline:not(.embedded) {
         padding: var(--space-3);
       }
       .service {
@@ -207,25 +220,15 @@ const SERVICE_LABELS: Record<string, string> = {
     }
   `,
   template: `
-    <section class="card pipeline" data-tour="pipeline" aria-label="Trade pipeline">
+    <section class="pipeline" [class.card]="!embedded()" [class.embedded]="embedded()" data-tour="pipeline" aria-label="Trade pipeline">
       <div class="row between head">
         <div>
           <h3 class="title">Trade pipeline</h3>
-          <p class="mono small muted order-id">{{ orderId() }}</p>
+          <p class="small muted order-id" [title]="orderId()">Order <span class="mono">{{ shortId() }}</span></p>
         </div>
-        <div class="row">
-          @if (regionLabel(); as reg) {
-            <span class="chip plain">{{ reg }}</span>
-          }
-          <button
-            class="btn quiet small close-btn"
-            type="button"
-            aria-label="Close pipeline"
-            (click)="closed.emit()"
-          >
-            ✕
-          </button>
-        </div>
+        @if (regionLabel(); as reg) {
+          <span class="chip plain">{{ reg }}</span>
+        }
       </div>
 
       @if (notFound()) {
@@ -237,9 +240,10 @@ const SERVICE_LABELS: Record<string, string> = {
       }
 
       <ol class="stepper" aria-live="polite" aria-label="Pipeline steps">
-        @for (step of trace()?.steps ?? []; track step.service + step.step + step.at) {
+        @for (step of trace()?.steps ?? []; track step.service + step.step + step.at; let i = $index) {
           <li
             class="step-row"
+            [style.animation-delay.ms]="stagger() ? i * 60 : 0"
             [class.ok]="step.status === 'ok'"
             [class.failed]="step.status === 'failed'"
             [class.pending]="step.status === 'pending'"
@@ -291,13 +295,17 @@ export class Pipeline {
   private readonly regions = inject(Regions, { optional: true });
 
   readonly orderId = input.required<string>();
-  readonly closed = output<void>();
+  /** Shown inside a card that already frames it, such as an order in the order list. */
+  readonly embedded = input(false);
 
   readonly trace = signal<PipelineTrace | null>(null);
   readonly cell = signal<string | null>(null);
   readonly polling = signal(false);
   readonly timedOut = signal(false);
   readonly notFound = signal(false);
+  /** A trace already complete when it's first shown arrives all at once: its steps come in one after another. */
+  readonly stagger = signal(false);
+  readonly shortId = computed(() => this.orderId().split('-')[0]);
 
   pollIntervalMs = 400;
   timeoutMs = 15_000;
@@ -360,6 +368,7 @@ export class Pipeline {
     this.timedOut.set(false);
     this.notFound.set(false);
     this.trace.set(null);
+    this.stagger.set(false);
     this.cell.set(null);
     this.first404Time = null;
     this.pollStartTime = Date.now();
@@ -398,6 +407,9 @@ export class Pipeline {
 
     try {
       const res = await this.api.getWithHeaders<PipelineTrace>(`/oms/v1/orders/${orderId}/trace`);
+      if (!this.trace() && res.body.complete) {
+        this.stagger.set(true);
+      }
       this.trace.set(res.body);
       this.first404Time = null;
       const cellHeader = res.headers.get(CELL_HEADER);
